@@ -1,0 +1,5 @@
+Dllama has been optimized to work best with the following models:
+
+Title   : https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF
+Download: https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/blob/main/Hermes-2-Pro-Mistral-7B.Q4_0.gguf
+Notes   : 8K context length, ChatML prompt format, JSON structured output, supports function calling, uncensored.
