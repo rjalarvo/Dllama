@@ -68,4 +68,6 @@ __recovery/
 # Boss dependency manager vendor folder https://github.com/HashLoad/boss
 modules/
 
+# Dllama
 *.dsv
+!bin/Dllama.dll

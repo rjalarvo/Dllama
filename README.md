@@ -6,12 +6,12 @@
 # Dllama
 
 ### Overview
-A simple and easy to use library for doing LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a>. It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses Vulkan back end for acceleration.
+A simple and easy to use library for doing LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a>. It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses CUDA back end for acceleration.
 
 ### Installation
 - Download <a href="https://github.com/tinyBigGAMES/Dllama/archive/refs/heads/main.zip" target="_blank">Dllama</a> and extract to a desired location. 
 - Download a GGUF model from Hugging Face (supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). I've been testing using <a href="https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/resolve/main/Hermes-2-Pro-Mistral-7B.Q4_0.gguf?download=true" target="_blank">Hermes-2-Pro-Mistral-7B-GGUF</a>.
-- If you have a  Vulkan supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
+- If you have a CUDA supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
 - See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi. Be sure to update the `CModelPath` and `CModelFilename` constants used by the examples to valid values on your system.
 - This project was built using Delphi 12.1 (latest), Windows 11 (latest), Intel Core i5-12400F 2500 Mhz 6 Cores, 12 logical, 36GB RAM, NVIDIA RTX 3060 GPU 12GB RAM.
 - Please test it and feel free to submit pull requests. I want to make it into something very cool for us Delphi developers.

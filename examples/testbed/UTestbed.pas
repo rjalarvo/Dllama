@@ -108,6 +108,7 @@ type
 
   { TTest03 }
   TTest03 = class(TTBaseTest)
+  //TTest03 = class(TDllama)
   public
     procedure Run(); override;
   end;
@@ -200,7 +201,7 @@ const
   CToolResponse =
   '''
   <tool_response>
-  {"name": "get_stock_fundamentals","content": {"symbol": "TSLA","company_name": "Tesla, Inc.","sector": "Consumer Cyclical,"industry": "Auto Manufacturers", "market_cap": 611384164352, "pe_ratio": 49.604652, "pb_ratio": 9.762013, "dividend_yield": None, "eps": 4.3, "beta": 2.427}}
+  {"name": "get_stock_fundamentals", "content": {"symbol": "TSLA", "company_name": "Tesla, Inc.", "sector": "Consumer Cyclical", "industry": "Auto Manufacturers", "market_cap": 611384164352, "pe_ratio": 49.604652, "pb_ratio": 9.762013, "dividend_yield": None, "eps": 4.3, "beta": 2.427, "52_week_high": 299.29, "52_week_low": 152.37}}
   </tool_response>
   ''';
 var
@@ -299,8 +300,8 @@ end;
 procedure RunTests();
 begin
   //RunObject(TTest01);
-  //RunObject(TTest02);
-  RunObject(TTest03);
+  RunObject(TTest02);
+  //RunObject(TTest03);
   Console.Pause();
 end;
 

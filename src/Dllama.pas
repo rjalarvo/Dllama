@@ -319,8 +319,8 @@ var
   LBatch: llama_batch;
   LBatchLogitsP: PInt8;
   LNCur: Integer;
-  LLogits: PSingle;
-  LLogitsP: PSingle;
+  LLogits: System.PSingle;
+  LLogitsP: System.PSingle;
   LCandidatesP: llama_token_data_array;
   LNewTokenId: llama_token;
   LToken: string;
@@ -456,7 +456,7 @@ end;
 procedure TDllama.AddSystemMessage(const AMessage: string);
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>\n system %s \n<|im_end|>', [AMessage]));
+  FPrompt.Add(Format('<|im_start|>system %s <|im_end|>', [AMessage]));
 end;
 
 procedure TDllama.AddSystemMessageFromFile(const AFilename: string);
@@ -468,25 +468,25 @@ end;
 procedure TDllama.AddUserMessage(const AMessage: string);
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>\n user %s \n<|im_end|>', [AMessage]));
+  FPrompt.Add(Format('<|im_start|>user %s <|im_end|>', [AMessage]));
   FUserMessage := AMessage;
 end;
 
 procedure TDllama.AddAssistantMessage(const AMessage: string);
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>\n assistant %s \n<|im_end|>', [AMessage]));
+  FPrompt.Add(Format('<|im_start|>assistant %s <|im_end|>', [AMessage]));
 end;
 
 procedure TDllama.AddToolMessage(const AMessage: string);
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>\n tool %s \n<|im_end|>', [AMessage]));
+  FPrompt.Add(Format('<|im_start|>tool %s <|im_end|>', [AMessage]));
 end;
 
 function  TDllama.GetInferencePrompt(): string;
 begin
-  Result := FPrompt.Text + '\n <|im_start|> assistant\n';
+  Result := FPrompt.Text + '<|im_start|>assistant\n';
 end;
 
 function  TDllama.GetUserMessage(): string;
@@ -539,78 +539,6 @@ procedure TDllama.OnInference(const AToken: string);
 begin
   Console.Print(AToken);
 end;
-
-
-{$REGION ' DLL LOADER '}
-{$R Dllama.Deps.res}
-
-var
-  DepsDLLHandle: THandle = 0;
-  DepsDLLFilename: string = '';
-  IsInit: Boolean = False;
-
-procedure LoadDLL();
-var
-  LResStream: TResourceStream;
-
-  function GetResName: string;
-  const
-    CValue = '7afff4c3624c470c80b1885262cbcf75';
-  begin
-    Result := CValue;
-  end;
-
-  procedure AbortDLL();
-  begin
-    Halt;
-  end;
-
-begin
-  // load deps DLL
-  if DepsDLLHandle <> 0 then Exit;
-  if not Boolean((FindResource(HInstance, PChar(GetResName), RT_RCDATA) <> 0)) then AbortDLL();
-  LResStream := TResourceStream.Create(HInstance, GetResName, RT_RCDATA);
-  try
-    LResStream.Position := 0;
-    DepsDLLFilename := TPath.Combine(TPath.GetTempPath,
-      TPath.ChangeExtension(TPath.GetGUIDFileName.ToLower, 'dat'));
-    LResStream.SaveToFile(DepsDLLFilename);
-    if not TFile.Exists(DepsDLLFilename) then AbortDLL();
-    DepsDLLHandle := LoadLibrary(PChar(DepsDLLFilename));
-    if DepsDLLHandle = 0 then AbortDLL();
-  finally
-    LResStream.Free();
-  end;
-  GetExports(DepsDLLHandle);
-end;
-
-procedure UnloadDLL();
-begin
-  // unload deps DLL
-  if DepsDLLHandle <> 0 then
-  begin
-    FreeLibrary(DepsDLLHandle);
-    TFile.Delete(DepsDLLFilename);
-    DepsDLLHandle := 0;
-    DepsDLLFilename := '';
-  end;
-end;
-
-initialization
-begin
-  // turn on memory leak detection
-  ReportMemoryLeaksOnShutdown := True;
-
-  // load allegro DLL
-  LoadDLL();
-end;
-
-finalization
-begin
-  // shutdown allegro DLL
-  UnloadDLL();
-end;
-{$ENDREGION}
 
 end.
 

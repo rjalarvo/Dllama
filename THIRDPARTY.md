@@ -7,6 +7,3 @@ The following table includes the open-source libraries utilized in the **Dllama*
 | llama.cpp    | LLM inference in C/C++                                | [llama.cpp](https://github.com/ggerganov/llama.cpp)|
 
 
-
-
-
