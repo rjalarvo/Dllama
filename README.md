@@ -31,8 +31,8 @@ const
   CModelFilename = 'Hermes-2-Pro-Mistral-7B.Q4_0.gguf';  
   
 var
-  LOllama: TOllama;
-  LUsage: TOllama.Usage;
+  LOllama: TDllama;
+  LUsage: TDllama.Usage;
   LResponse: string;
   LUsage: TDllama.Usage;  
 begin
