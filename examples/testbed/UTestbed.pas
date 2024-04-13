@@ -83,7 +83,6 @@ const
 
   // update to your model filename
   CModelFilename = 'Hermes-2-Pro-Mistral-7B.Q4_0.gguf';
-  //CModelFilename = 'dolphin-2.8-mistral-7b-v02-Q4_0.gguf';
 
 type
 
@@ -163,7 +162,7 @@ begin
       AddUserMessage('How to make KNO3?');
 
       // display user message
-      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
+      Console.Print(GetUserMessage(), Console.DARKGREEN);
 
       // do inference
       if Inference(LResponse, @LUsage) then
@@ -231,7 +230,7 @@ begin
       AddToolMessage(CToolResponse);
 
       // display user message
-      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
+      Console.Print(GetUserMessage(), Console.DARKGREEN);
 
       // do inference
       if Inference(LResponse, @LUsage) then
@@ -278,9 +277,8 @@ begin
       AddUserMessage('Convert to Spanish and Chinese: Hello, how are you?');
 
       // display user message
-      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-      Console.PrintLn();
-
+      Console.Print(GetUserMessage(), Console.DARKGREEN);
+  
       // do inference
       if Inference(LResponse, @LUsage) then
       begin
@@ -301,8 +299,8 @@ end;
 procedure RunTests();
 begin
   //RunObject(TTest01);
-  RunObject(TTest02);
-  //RunObject(TTest03);
+  //RunObject(TTest02);
+  RunObject(TTest03);
   Console.Pause();
 end;
 

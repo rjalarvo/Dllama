@@ -147,7 +147,7 @@ type
     function  GetTemperature(): Single;
     procedure SetTemperature(const ATemperature: Single);
 
-    function  GetInferencePrompt(const AEndWidthAssistantMsg: Boolean): string;
+    function  GetInferencePrompt(const AEndWithAssistantMsg: Boolean): string;
     function  Inference(var AResponse: string; AUsage: TDllama.PUsage=nil): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
 
@@ -509,7 +509,7 @@ begin
   FMessages.Add(LMessage);
 end;
 
-function  TDllama.GetInferencePrompt(const AEndWidthAssistantMsg: Boolean): string;
+function  TDllama.GetInferencePrompt(const AEndWithAssistantMsg: Boolean): string;
 var
   LSize: Int32;
   LRes: Int32;
@@ -535,17 +535,18 @@ begin
 
   LSize := LSize * 2;
   SetLength(LResult, LSize);
-  LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, AEndWidthAssistantMsg, PUTF8Char(LResult), LSize);
+  LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, False, PUTF8Char(LResult), LSize);
   if LRes > LSize then
   begin
     LSize := LRes;
     SetLength(LResult, LSize);
-    LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, AEndWidthAssistantMsg, PUTF8Char(LResult), LSize);
+    LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, False, PUTF8Char(LResult), LSize);
     Assert(LRes <= LSize);
   end;
   SetLength(LResult, LRes);
-  Result := Utf8ToString(LResult){ + '<|im_start|>assistant'};
-
+  Result := Utf8ToString(LResult);
+  if AEndWithAssistantMsg then
+    Result := Result + '\n <|im_start|>assistant\n';
 end;
 
 function  TDllama.GetUserMessage(): string;
