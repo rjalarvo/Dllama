@@ -69,6 +69,7 @@ unit Dllama;
 interface
 
 uses
+  System.Generics.Collections,
   System.SysUtils,
   System.IOUtils,
   System.Classes,
@@ -100,7 +101,12 @@ type
       OutputTokens: Int32;
       TotalTokens: Int32;
     end;
-
+  protected type
+    TMessage = record
+      Role: UTF8String;
+      Context: UTF8String;
+    end;
+    TMessages = TList<TMessage>;
   protected
     FModelPath: string;
     FModelFilename: string;
@@ -111,7 +117,7 @@ type
     FContext: Pllama_context;
     FContexParams: llama_context_params;
     FUsage: TDllama.Usage;
-    FPrompt: TStringList;
+    FMessages: TMessages;
     FUserMessage: string;
     FError: string;
     FTemperature: Single;
@@ -141,7 +147,7 @@ type
     function  GetTemperature(): Single;
     procedure SetTemperature(const ATemperature: Single);
 
-    function  GetInferencePrompt(): string;
+    function  GetInferencePrompt(const AEndWidthAssistantMsg: Boolean): string;
     function  Inference(var AResponse: string; AUsage: TDllama.PUsage=nil): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
 
@@ -149,6 +155,8 @@ type
     function  OnLoadModelProgress(const AProgress: Single): Boolean; virtual;
     procedure OnLog(const ALevel: Integer; const AText: string); virtual;
     procedure OnInference(const AToken: string); virtual;
+
+    property Model: Pllama_model read FModel;
   end;
 
 implementation
@@ -177,7 +185,7 @@ end;
 constructor TDllama.Create();
 begin
   inherited;
-  FPrompt := TStringList.Create();
+  FMessages := TMessages.Create();
 end;
 
 destructor TDllama.Destroy();
@@ -186,10 +194,10 @@ begin
 
   UnloadModel();
 
-  if Assigned(FPrompt) then
+  if Assigned(FMessages) then
   begin
-    FPrompt.Free();
-    FPrompt := nil;
+    FMessages.Free();
+    FMessages := nil;
   end;
 end;
 
@@ -450,13 +458,17 @@ end;
 
 procedure TDllama.ClearMessages();
 begin
-  FPrompt.Clear();
+  FMessages.Clear();
 end;
 
 procedure TDllama.AddSystemMessage(const AMessage: string);
+var
+  LMessage: TMessage;
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>system %s <|im_end|>', [AMessage]));
+  LMessage.Role := 'system';
+  LMessage.Context := UTF8String(AMessage);
+  FMessages.Add(LMessage);
 end;
 
 procedure TDllama.AddSystemMessageFromFile(const AFilename: string);
@@ -466,27 +478,74 @@ begin
 end;
 
 procedure TDllama.AddUserMessage(const AMessage: string);
+var
+  LMessage: TMessage;
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>user %s <|im_end|>', [AMessage]));
+  LMessage.Role := 'user';
+  LMessage.Context := UTF8String(AMessage);
+  FMessages.Add(LMessage);
   FUserMessage := AMessage;
 end;
 
 procedure TDllama.AddAssistantMessage(const AMessage: string);
+var
+  LMessage: TMessage;
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>assistant %s <|im_end|>', [AMessage]));
+  LMessage.Role := 'assistant';
+  LMessage.Context := UTF8String(AMessage);
+  FMessages.Add(LMessage);
+  FUserMessage := AMessage;
 end;
 
 procedure TDllama.AddToolMessage(const AMessage: string);
+var
+  LMessage: TMessage;
 begin
   if AMessage.IsEmpty then Exit;
-  FPrompt.Add(Format('<|im_start|>tool %s <|im_end|>', [AMessage]));
+  LMessage.Role := 'tool';
+  LMessage.Context := UTF8String(AMessage);
+  FMessages.Add(LMessage);
 end;
 
-function  TDllama.GetInferencePrompt(): string;
+function  TDllama.GetInferencePrompt(const AEndWidthAssistantMsg: Boolean): string;
+var
+  LSize: Int32;
+  LRes: Int32;
+  LCount: Int32;
+  LMessage: TMessage;
+  LResult: UTF8String;
+  LChatMsg: array of llama_chat_message;
 begin
-  Result := FPrompt.Text + '<|im_start|>assistant\n';
+  Result := '';
+  if FMessages.Count = 0 then Exit;
+  SetLength(LChatMsg, FMessages.Count);
+
+  LSize := 0;
+  LCount := 0;
+  for LMessage in FMessages do
+  begin
+    LSize := LSize + Length(LMessage.Role) + Length(LMessage.Context);
+    LChatMsg[LCount].role := PUTF8Char(LMessage.Role);
+    LChatMsg[LCount].content := PUTF8Char(LMessage.Context);
+    Inc(LCount);
+  end;
+  if LCount = 0 then Exit;
+
+  LSize := LSize * 2;
+  SetLength(LResult, LSize);
+  LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, AEndWidthAssistantMsg, PUTF8Char(LResult), LSize);
+  if LRes > LSize then
+  begin
+    LSize := LRes;
+    SetLength(LResult, LSize);
+    LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, AEndWidthAssistantMsg, PUTF8Char(LResult), LSize);
+    Assert(LRes <= LSize);
+  end;
+  SetLength(LResult, LRes);
+  Result := Utf8ToString(LResult){ + '<|im_start|>assistant'};
+
 end;
 
 function  TDllama.GetUserMessage(): string;
@@ -509,8 +568,8 @@ var
   LMessages: string;
 begin
   Result := False;
-  if FPrompt.Text.IsEmpty then Exit;
-  LMessages := GetInferencePrompt();
+  if FMessages.Count = 0 then Exit;
+  LMessages := GetInferencePrompt(True);
   Result := DoInference(LMessages, AResponse, AUsage)
 end;
 
