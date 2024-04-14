@@ -92,6 +92,10 @@ type
 
   { TDllama }
   TDllama = class(TBaseObject)
+  public const
+    DefaultTemplate = '<|im_start|>%s\n %s\n<|im_end|>';
+    DefaultTemplateEnding = '\n <|im_start|>assistant\n';
+    DefaultSkipTokens: array [0..2] of string = ('<dummy00022>', '<dummy00012>', '<dummy00015>');
   public type
     PUsage = ^Usage;
     Usage = record
@@ -103,14 +107,16 @@ type
     end;
     ModelInfo = record
       Filename: string;
-      MaxTokens: UInt64;
-      EndWithAssistantMsg: Boolean;
+      MaxContext: UInt64;
+      Template: string;
+      TemplateEnding: string;
+      SkipTokens: array of string;
     end;
   protected type
 
     TMessage = record
-      Role: UTF8String;
-      Context: UTF8String;
+      Role: string;
+      Context: string;
     end;
     TMessages = TList<TMessage>;
     TModels = TDictionary<string, TDllama.ModelInfo>;
@@ -131,6 +137,7 @@ type
     FModels: TModels;
     FModelInfo: TDllama.ModelInfo;
 
+    function  IsSkipToken(const AToken: string): Boolean;
     function  GetInferencePrompt(): string;
     function  DoInference(const APrompt: string; var AResult: string; AUsage: TDllama.PUsage): Boolean;
 
@@ -142,7 +149,7 @@ type
     procedure SetError(const AMsg: string; const AArgs: array of const);
 
     function  SetModelPath(const APath: string): Boolean;
-    procedure AddModel(const AFilename, AReferenceName: string; const AMaxTokens: UInt64; const AEndWithAssistantMsg: Boolean);
+    procedure AddModel(const AFilename, AReferenceName: string; const AMaxContext: UInt64; const ATemplate, ATemplateEnding: string; const ASkipTokens: array of string);
     function  LoadModel(const AReferenceName: string): Boolean;
     procedure UnloadModel();
     function  GetModelInfo(): TDllama.ModelInfo;
@@ -165,8 +172,6 @@ type
     function  OnLoadModelProgress(const AProgress: Single): Boolean; virtual;
     procedure OnLog(const ALevel: Integer; const AText: string); virtual;
     procedure OnInference(const AToken: string); virtual;
-
-    property Model: Pllama_model read FModel;
   end;
 
 implementation
@@ -228,13 +233,20 @@ begin
   FError := Format(AMsg, AArgs);
 end;
 
-procedure TDllama.AddModel(const AFilename, AReferenceName: string; const AMaxTokens: UInt64; const AEndWithAssistantMsg: Boolean);
+procedure TDllama.AddModel(const AFilename, AReferenceName: string; const AMaxContext: UInt64; const ATemplate, ATemplateEnding: string; const ASkipTokens: array of string);
 var
   LModelInfo: TDllama.ModelInfo;
+  I: Integer;
 begin
   LModelInfo.Filename := AFilename;
-  LModelInfo.MaxTokens := AMaxTokens;
-  LModelInfo.EndWithAssistantMsg := AEndWithAssistantMsg;
+  LModelInfo.MaxContext := AMaxContext;
+  LModelInfo.Template := ATemplate;
+  LModelInfo.TemplateEnding := ATemplateEnding;
+  SetLength(LModelInfo.SkipTokens, High(ASkipTokens)+1);
+  for I := Low(ASkipTokens) to High(ASkipTokens) do
+  begin
+    LModelInfo.SkipTokens[I] := ASkipTokens[I];
+  end;
   FModels.AddOrSetValue(AReferenceName, LModelInfo);
 end;
 
@@ -254,7 +266,7 @@ begin
 
   if not FModels.TryGetValue(AReferenceName, FModelInfo) then
   begin
-    //FResponse := Format('Refrence model "%s" not found.', [AModel]);
+    SetError('Refrence model "%s" not found.', [AReferenceName]);
     Exit;
   end;
 
@@ -300,7 +312,7 @@ begin
   FContexParams := llama_context_default_params();
   FContexParams.offload_kqv := true;
   FContexParams.seed  := MaxInt;
-  FContexParams.n_ctx := FModelInfo.MaxTokens;
+  FContexParams.n_ctx := FModelInfo.MaxContext;
   FContexParams.n_threads := Utils.GetPhysicalProcessorCount();
   FContexParams.n_threads_batch := FContexParams.n_threads;
   FContext := llama_new_context_with_model(FModel, FContexParams);
@@ -331,8 +343,9 @@ begin
     llama_free_model(FModel);
     FModel := nil;
     FModelInfo.Filename := '';
-    FModelInfo.MaxTokens := 0;
-    FModelInfo.EndWithAssistantMsg := False;
+    FModelInfo.MaxContext := 0;
+    FModelInfo.Template := '';
+    FModelInfo.TemplateEnding := '';
   end;
 
   if Assigned(FContext) then
@@ -365,13 +378,14 @@ var
   LCandidatesP: llama_token_data_array;
   LNewTokenId: llama_token;
   LToken: string;
-
   LNBatch: Int32;
   LTokenData: llama_token_data;
   LTimings: llama_timings;
+  LFirstToken: Boolean;
 begin
   Result := False;
   AResult := '';
+  LFirstToken := True;
 
   LNLen := FContexParams.n_ctx;
 
@@ -429,9 +443,6 @@ begin
       end;
 
       LLogits  := llama_get_logits_ith(FContext, LBatch.n_tokens - 1);
-      //LLogitsP := LLogits;
-      //inc(LLogitsP, llama_token_eos(FModel));
-      //LLogitsP^ := 0;
 
       for I := FVocabCount-1 downto 0 do
       begin
@@ -447,7 +458,7 @@ begin
       LCandidatesP.size := FVocabCount + 1;
       LCandidatesP.sorted := False;
 
-      llama_sample_temp(FContext, @LCandidatesP, FTemperature{ 1e-8});
+      llama_sample_temp(FContext, @LCandidatesP, FTemperature);
       LNewTokenId := llama_sample_token_greedy(FContext, @LCandidatesP);
 
       if (llama_token_eos(FModel) = LNewTokenId) or (LNCur = LNLen) then
@@ -458,8 +469,18 @@ begin
 
       LToken := llama_token_to_piece(FContext, LNewTokenId);
 
-      // sanitize Json tokens
-      if not LToken.StartsWith('<dummy') then
+      // trim leading whitespace of first non-BOS token
+      if llama_token_bos(FModel) <> LNewTokenId then
+      begin
+        if LFirstToken then
+        begin
+          LToken := LToken.TrimLeft;
+          LFirstToken := False;
+        end;
+      end;
+
+      // sanitize token
+      if not IsSkipToken(LToken) then
       begin
         if LToken.EndsWith('\', True) then
           begin
@@ -526,7 +547,7 @@ var
 begin
   if AMessage.IsEmpty then Exit;
   LMessage.Role := 'system';
-  LMessage.Context := UTF8String(AMessage);
+  LMessage.Context := AMessage;
   FMessages.Add(LMessage);
 end;
 
@@ -542,7 +563,7 @@ var
 begin
   if AMessage.IsEmpty then Exit;
   LMessage.Role := 'user';
-  LMessage.Context := UTF8String(AMessage);
+  LMessage.Context := AMessage;
   FMessages.Add(LMessage);
   FUserMessage := AMessage;
 end;
@@ -553,7 +574,7 @@ var
 begin
   if AMessage.IsEmpty then Exit;
   LMessage.Role := 'assistant';
-  LMessage.Context := UTF8String(AMessage);
+  LMessage.Context := AMessage;
   FMessages.Add(LMessage);
   FUserMessage := AMessage;
 end;
@@ -564,49 +585,37 @@ var
 begin
   if AMessage.IsEmpty then Exit;
   LMessage.Role := 'tool';
-  LMessage.Context := UTF8String(AMessage);
+  LMessage.Context := AMessage;
   FMessages.Add(LMessage);
+end;
+
+function  TDllama.IsSkipToken(const AToken: string): Boolean;
+var
+  LSkipToken: string;
+begin
+  Result := False;
+  for LSkipToken in FModelInfo.SkipTokens do
+  begin
+    if SameText(AToken, LSkipToken) then
+    begin
+      Exit(True);
+    end;
+  end;
 end;
 
 function  TDllama.GetInferencePrompt(): string;
 var
-  LSize: Int32;
-  LRes: Int32;
-  LCount: Int32;
   LMessage: TMessage;
-  LResult: UTF8String;
-  LChatMsg: array of llama_chat_message;
 begin
   Result := '';
   if FMessages.Count = 0 then Exit;
-  SetLength(LChatMsg, FMessages.Count);
 
-  LSize := 0;
-  LCount := 0;
   for LMessage in FMessages do
   begin
-    LSize := LSize + Length(LMessage.Role) + Length(LMessage.Context);
-    LChatMsg[LCount].role := PUTF8Char(LMessage.Role);
-    LChatMsg[LCount].content := PUTF8Char(LMessage.Context);
-    Inc(LCount);
+    Result := Result + Format(FModelInfo.Template, [LMessage.Role, LMessage.Context]);
   end;
-  if LCount = 0 then Exit;
-
-  LSize := LSize * 2;
-  SetLength(LResult, LSize);
-  LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, False, PUTF8Char(LResult), LSize);
-  if LRes > LSize then
-  begin
-    LSize := LRes;
-    SetLength(LResult, LSize);
-    LRes := llama_chat_apply_template(FModel, nil, @LChatMsg[0], LCount, False, PUTF8Char(LResult), LSize);
-    Assert(LRes <= LSize);
-  end;
-  SetLength(LResult, LRes);
-  Result := Utf8ToString(LResult);
-
-  if FModelInfo.EndWithAssistantMsg then
-    Result := Result + '\n <|im_start|>assistant\n';
+  if not FModelInfo.TemplateEnding.IsEmpty then
+    Result := Result + FModelInfo.TemplateEnding;
 end;
 
 function  TDllama.GetUserMessage(): string;

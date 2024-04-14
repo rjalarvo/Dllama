@@ -82,7 +82,8 @@ const
   CModelPath = 'C:\LLM\gguf';
 
   // update to your model reference name
-  CModelName = 'hermes';
+  CModelName = 'hermes-mistral';
+  //CModelName = 'dolphin-mistral';
 
 type
 
@@ -151,7 +152,8 @@ begin
   SetModelPath(CModelPath);
 
   // add models
-  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
+  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
+  AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, TDllama.DefaultTemplate, TDllama.DefaultTemplateEnding, TDllama.DefaultSkipTokens);
 
   // try to load model
   if LoadModel(CModelName) then
@@ -165,7 +167,7 @@ begin
       AddUserMessage('How do I make KNO3?');
 
       // display user message
-      Console.Print(GetUserMessage(), Console.DARKGREEN);
+      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
 
       // do inference
       if Inference(LResponse, @LUsage) then
@@ -221,8 +223,8 @@ begin
   SetModelPath(CModelPath);
 
   // add models
-  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
-
+  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
+  AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, TDllama.DefaultTemplate, TDllama.DefaultTemplateEnding, TDllama.DefaultSkipTokens);
 
   // try to load model
   if LoadModel(CModelName) then
@@ -237,7 +239,7 @@ begin
       AddToolMessage(CToolResponse);
 
       // display user message
-      Console.Print(GetUserMessage(), Console.DARKGREEN);
+      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
 
       // do inference
       if Inference(LResponse, @LUsage) then
@@ -273,7 +275,8 @@ begin
   SetModelPath(CModelPath);
 
   // add models
-  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
+  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
+  AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, TDllama.DefaultTemplate, TDllama.DefaultTemplateEnding, TDllama.DefaultSkipTokens);
 
   // try to load model
   if LoadModel(CModelName) then
@@ -287,7 +290,7 @@ begin
       AddUserMessage('Convert to Spanish and Chinese: Hello, how are you?');
 
       // display user message
-      Console.Print(GetUserMessage(), Console.DARKGREEN);
+      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
   
       // do inference
       if Inference(LResponse, @LUsage) then
@@ -308,9 +311,9 @@ end;
 
 procedure RunTests();
 begin
-  //RunObject(TTest01);
+  RunObject(TTest01);
   //RunObject(TTest02);
-  RunObject(TTest03);
+  //RunObject(TTest03);
   Console.Pause();
 end;
 

@@ -1,5 +1,21 @@
-Dllama has been optimized to work best with the following models:
+These models have been tested and known to work in Dllama
 
-Title   : https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF
-Download: https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/blob/main/Hermes-2-Pro-Mistral-7B.Q4_0.gguf
-Notes   : 8K context length, ChatML prompt format, JSON structured output, supports function calling, censored.
+-----------------------------------------------------------------------------
+Name:       : dolphin-2.8-mistral-7b-v02
+Discription : Dolphin-2.8 has a variety of instruction, conversational, and coding skills
+Download    : https://huggingface.co/dagbs/dolphin-2.8-mistral-7b-v02-GGUF/resolve/main/dolphin-2.8-mistral-7b-v02.Q6_K.gguf?download=true
+Max Context : 32k
+Template    : '<|im_start|>%s\n %s<|im_end|>'
+Template End: ''
+Skip Tokens : []
+More info   : https://huggingface.co/cognitivecomputations/dolphin-2.8-mistral-7b-v02
+
+-----------------------------------------------------------------------------
+Name:       : Hermes-2-Pro-Mistral-7B
+Discription : Hermes 2 Pro has excellent general task and conversation capabilities, excels at Function Calling and JSON Structured
+Download    : https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF/resolve/main/Hermes-2-Pro-Mistral-7B.Q6_K.gguf?download=true
+Max Context : 8k
+Template    : '<|im_start|>%s\n %s\n<|im_end|>'
+Template End: '\n <|im_start|>assistant\n'
+Skip Tokens : ['<dummy00022>', '<dummy00012>', '<dummy00015>']
+More info   : https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF
