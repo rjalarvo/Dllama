@@ -89,13 +89,8 @@ const
   DLLAMA_PROJECT       = DLLAMA_NAME+' ('+DLLAMA_CODENAME+') v'+DLLAMA_MAJOR_VERSION+'.'+DLLAMA_MINOR_VERSION+'.'+DLLAMA_PATCH_VERSION;
 
 type
-
   { TDllama }
   TDllama = class(TBaseObject)
-  public const
-    DefaultTemplate = '<|im_start|>%s\n %s\n<|im_end|>';
-    DefaultTemplateEnding = '\n <|im_start|>assistant\n';
-    DefaultSkipTokens: array [0..2] of string = ('<dummy00022>', '<dummy00012>', '<dummy00015>');
   public type
     PUsage = ^Usage;
     Usage = record
@@ -140,20 +135,27 @@ type
     function  IsSkipToken(const AToken: string): Boolean;
     function  GetInferencePrompt(): string;
     function  DoInference(const APrompt: string; var AResult: string; AUsage: TDllama.PUsage): Boolean;
-
   public
+    // init
     constructor Create(); override;
     destructor Destroy(); override;
 
+    // error
     function  GetError(): string;
     procedure SetError(const AMsg: string; const AArgs: array of const);
 
+    // model
     function  SetModelPath(const APath: string): Boolean;
+    procedure ClearModels();
     procedure AddModel(const AFilename, AReferenceName: string; const AMaxContext: UInt64; const ATemplate, ATemplateEnding: string; const ASkipTokens: array of string);
     function  LoadModel(const AReferenceName: string): Boolean;
     procedure UnloadModel();
+    function  ModelLoaded(): Boolean;
     function  GetModelInfo(): TDllama.ModelInfo;
+    function  SaveModelDb(const AFilename: string='models.json'): Boolean;
+    function  LoadModelDb(const AFilename: string='models.json'): Boolean;
 
+    // message
     procedure ClearMessages();
     procedure AddSystemMessage(const AMessage: string);
     procedure AddSystemMessageFromFile(const AFilename: string);
@@ -162,12 +164,13 @@ type
     procedure AddToolMessage(const AMessage: string);
     function  GetUserMessage(): string;
 
+    // inference
     function  GetTemperature(): Single;
     procedure SetTemperature(const ATemperature: Single);
-
     function  Inference(var AResponse: string; AUsage: TDllama.PUsage=nil): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
 
+    // events
     procedure OnCError(const AText: string); virtual;
     function  OnLoadModelProgress(const AProgress: Single): Boolean; virtual;
     procedure OnLog(const ALevel: Integer; const AText: string); virtual;
@@ -231,6 +234,11 @@ end;
 procedure TDllama.SetError(const AMsg: string; const AArgs: array of const);
 begin
   FError := Format(AMsg, AArgs);
+end;
+
+procedure TDllama.ClearModels();
+begin
+  FModels.Clear();
 end;
 
 procedure TDllama.AddModel(const AFilename, AReferenceName: string; const AMaxContext: UInt64; const ATemplate, ATemplateEnding: string; const ASkipTokens: array of string);
@@ -358,9 +366,104 @@ begin
   restore_cerr();
 end;
 
+function  TDllama.ModelLoaded(): Boolean;
+begin
+  Result := Boolean(Assigned(FModel) and Assigned(FContext));
+end;
+
 function  TDllama.GetModelInfo(): TDllama.ModelInfo;
 begin
   Result := FModelInfo;
+end;
+
+function  TDllama.SaveModelDb(const AFilename: string): Boolean;
+var
+  LModelInfo: TPair<string, TDllama.ModelInfo>;
+  LJson: TJsonObject;
+  LModel: TJsonObject;
+  LSkipTokens: TJsonArray;
+  LToken: string;
+  LFilename: string;
+begin
+  Result := False;
+  if AFilename.IsEmpty then Exit;
+
+  LFilename := TPath.ChangeExtension(AFilename, 'json');
+
+  LJson := TJsonObject.Create();
+  try
+    with LJson.AddArray('Models') do
+    begin
+      for LModelInfo in FModels do
+      begin
+        LModel := TJsonObject.Create();
+        LModel.S['Filename'] := LModelInfo.Value.Filename;
+        LModel.S['RefName'] := LModelInfo.Key;
+        LModel.I['MaxContext'] := LModelInfo.Value.MaxContext;
+        LModel.S['Template'] := LModelInfo.Value.Template;
+        LModel.S['TemplateEnding'] := LModelInfo.Value.TemplateEnding;
+        LSkipTokens := TJsonArray.Create();
+        for LToken in LModelInfo.Value.SkipTokens do
+        begin
+          LSkipTokens.Add(LToken);
+        end;
+        LModel.A['SkipTokens'] := LSkipTokens;
+        Add(LModel);
+      end;
+    end;
+    TFile.WriteAllText(LFilename, LJson.Format(), TEncoding.UTF8);
+  finally
+    LJson.Free();
+  end;
+  Result := TFile.Exists(LFilename);
+end;
+
+function  TDllama.LoadModelDb(const AFilename: string): Boolean;
+var
+  LFilename: string;
+  LJson: TJsonObject;
+  LCount: Integer;
+  LModelInfo: TDllama.ModelInfo;
+  LSkipTokens: TJsonArray;
+  I,J: Integer;
+  LRefName: string;
+begin
+  Result := False;
+  if AFilename.IsEmpty then Exit;
+
+  LFilename := TPath.ChangeExtension(AFilename, 'json');
+  if not TFile.Exists(LFilename) then Exit;
+
+  LJson := TJsonObject.Parse(TFile.ReadAllText(LFilename, TEncoding.UTF8));
+  try
+    if not LJson.Contains('Models') then Exit;
+    LCount := LJson.A['Models'].Count;
+
+    if LCount = 0 then Exit;
+
+    ClearModels();
+
+    for I := 0 to LCount-1 do
+    begin
+      LModelInfo.Filename := LJson.A['Models'].Items[I].FindValue('Filename').Value;
+      LRefName := LJson.A['Models'].Items[I].FindValue('RefName').Value;
+      LModelInfo.MaxContext := LJson.A['Models'].Items[I].FindValue('MaxContext').Value.ToInt64;
+      LModelInfo.Template := LJson.A['Models'].Items[I].FindValue('Template').Value;
+      LModelInfo.TemplateEnding := LJson.A['Models'].Items[I].FindValue('TemplateEnding').Value;
+
+      LSkipTokens := LJson.A['Models'].Items[I].FindValue('SkipTokens') as TJsonArray;
+      SetLength(LModelInfo.SkipTokens, LSkipTokens.Count);
+      for J := 0 to LSkipTokens.Count-1 do
+      begin
+         LModelInfo.SkipTokens[J] := LSkipTokens.Items[J].Value;
+      end;
+
+      AddModel(LModelInfo.Filename, LRefName, LModelInfo.MaxContext, LModelInfo.Template, LModelInfo.TemplateEnding, LModelInfo.SkipTokens);
+    end;
+
+  finally
+    LJson.Free();
+  end;
 end;
 
 function  TDllama.DoInference(const APrompt: string; var AResult: string; AUsage: TDllama.PUsage): Boolean;

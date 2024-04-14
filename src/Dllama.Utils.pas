@@ -668,10 +668,10 @@ type
     procedure FromJSON(AJson: string);
 
     function AddObject(const AName: string): TJsonObject;
+    function AddArray(const AName: string): TJsonArray;
 
     class function Parse(const AData: string): TJsonObject; overload;
     class function ParseJSONArray(const AJSONArrayStr: string): TJSONArray;
-
 
     property Types[AName: string]: TJsonValueType read GetTypes;
     property Names[AIndex: integer]: string read GetNames;
@@ -2435,6 +2435,12 @@ end;
 function TJsonHelper.AddObject(const AName: string): TJsonObject;
 begin
   Result := TJsonObject.Create();
+  AddPair(AName, Result);
+end;
+
+function TJsonHelper.AddArray(const AName: string): TJsonArray;
+begin
+  Result := TJsonArray.Create();
   AddPair(AName, Result);
 end;
 
