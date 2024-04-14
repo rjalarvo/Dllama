@@ -51,7 +51,7 @@ begin
   LDllama.SetModelPath(CModelPath);
   
   // add models
-  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
+  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
 
   // try to load model
   if LDllama.LoadModel(CModelName) then
