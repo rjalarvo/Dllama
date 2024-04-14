@@ -30,8 +30,8 @@ const
   // update to your model path
   CModelPath = 'C:\LLM\gguf';
 
-  // update to your model filename
-  CModelFilename = 'Hermes-2-Pro-Mistral-7B.Q4_0.gguf';  
+  // update to your model reference name
+  CModelName = 'hermes';
   
 var
   LOllama: TDllama;
@@ -49,9 +49,12 @@ begin
 
   // set model path
   LDllama.SetModelPath(CModelPath);
+  
+  // add models
+  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
 
   // try to load model
-  if LDllama.LoadModel(CModelFilename, 1024) then
+  if LDllama.LoadModel(CModelName, 1024) then
     begin
       // show loaded model filename
       Console.ClearLine(Console.WHITE);

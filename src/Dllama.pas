@@ -101,15 +101,21 @@ type
       OutputTokens: Int32;
       TotalTokens: Int32;
     end;
+    ModelInfo = record
+      Filename: string;
+      MaxTokens: UInt64;
+      EndWithAssistantMsg: Boolean;
+    end;
   protected type
+
     TMessage = record
       Role: UTF8String;
       Context: UTF8String;
     end;
     TMessages = TList<TMessage>;
+    TModels = TDictionary<string, TDllama.ModelInfo>;
   protected
     FModelPath: string;
-    FModelFilename: string;
     FModel: Pllama_model;
     FModelParams: llama_model_params;
     FCandidates: TVirtualBuffer<llama_token_data>;
@@ -121,7 +127,11 @@ type
     FUserMessage: string;
     FError: string;
     FTemperature: Single;
+    FLastToken: string;
+    FModels: TModels;
+    FModelInfo: TDllama.ModelInfo;
 
+    function  GetInferencePrompt(): string;
     function  DoInference(const APrompt: string; var AResult: string; AUsage: TDllama.PUsage): Boolean;
 
   public
@@ -132,9 +142,10 @@ type
     procedure SetError(const AMsg: string; const AArgs: array of const);
 
     function  SetModelPath(const APath: string): Boolean;
-    function  LoadModel(const AFilename: string; const AMaxContex: Integer): Boolean;
+    procedure AddModel(const AFilename, AReferenceName: string; const AMaxTokens: UInt64; const AEndWithAssistantMsg: Boolean);
+    function  LoadModel(const AReferenceName: string): Boolean;
     procedure UnloadModel();
-    function  GetModelFilename(): string;
+    function  GetModelInfo(): TDllama.ModelInfo;
 
     procedure ClearMessages();
     procedure AddSystemMessage(const AMessage: string);
@@ -147,7 +158,6 @@ type
     function  GetTemperature(): Single;
     procedure SetTemperature(const ATemperature: Single);
 
-    function  GetInferencePrompt(const AEndWithAssistantMsg: Boolean): string;
     function  Inference(var AResponse: string; AUsage: TDllama.PUsage=nil): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
 
@@ -185,6 +195,7 @@ end;
 constructor TDllama.Create();
 begin
   inherited;
+  FModels := TModels.Create();
   FMessages := TMessages.Create();
 end;
 
@@ -199,6 +210,12 @@ begin
     FMessages.Free();
     FMessages := nil;
   end;
+
+  if Assigned(FModels) then
+  begin
+    FModels.Free();
+    FModels := nil;
+  end;
 end;
 
 function  TDllama.GetError(): string;
@@ -211,6 +228,16 @@ begin
   FError := Format(AMsg, AArgs);
 end;
 
+procedure TDllama.AddModel(const AFilename, AReferenceName: string; const AMaxTokens: UInt64; const AEndWithAssistantMsg: Boolean);
+var
+  LModelInfo: TDllama.ModelInfo;
+begin
+  LModelInfo.Filename := AFilename;
+  LModelInfo.MaxTokens := AMaxTokens;
+  LModelInfo.EndWithAssistantMsg := AEndWithAssistantMsg;
+  FModels.AddOrSetValue(AReferenceName, LModelInfo);
+end;
+
 function TDllama.SetModelPath(const APath: string): Boolean;
 begin
   Result := False;
@@ -218,14 +245,20 @@ begin
   FModelPath := APath;
 end;
 
-function TDllama.LoadModel(const AFilename: string; const AMaxContex: Integer): Boolean;
+function TDllama.LoadModel(const AReferenceName: string): Boolean;
 var
   LFilename: string;
 begin
   Result := False;
   if Assigned(FModel) then Exit;
 
-  LFilename := TPath.Combine(FModelPath, AFilename);
+  if not FModels.TryGetValue(AReferenceName, FModelInfo) then
+  begin
+    //FResponse := Format('Refrence model "%s" not found.', [AModel]);
+    Exit;
+  end;
+
+  LFilename := TPath.Combine(FModelPath, FModelInfo.Filename);
   if not TFile.Exists(LFilename) then Exit;
 
   redirect_cerr_to_callback(TDllama_CErrCallback, Self);
@@ -267,7 +300,7 @@ begin
   FContexParams := llama_context_default_params();
   FContexParams.offload_kqv := true;
   FContexParams.seed  := MaxInt;
-  FContexParams.n_ctx := AMaxContex;
+  FContexParams.n_ctx := FModelInfo.MaxTokens;
   FContexParams.n_threads := Utils.GetPhysicalProcessorCount();
   FContexParams.n_threads_batch := FContexParams.n_threads;
   FContext := llama_new_context_with_model(FModel, FContexParams);
@@ -277,8 +310,6 @@ begin
     UnloadModel();
     Exit;
   end;
-
-  FModelFilename := AFilename;
 
   SetTemperature(0);
 
@@ -299,7 +330,9 @@ begin
   begin
     llama_free_model(FModel);
     FModel := nil;
-    FModelFilename := '';
+    FModelInfo.Filename := '';
+    FModelInfo.MaxTokens := 0;
+    FModelInfo.EndWithAssistantMsg := False;
   end;
 
   if Assigned(FContext) then
@@ -312,9 +345,9 @@ begin
   restore_cerr();
 end;
 
-function  TDllama.GetModelFilename(): string;
+function  TDllama.GetModelInfo(): TDllama.ModelInfo;
 begin
-  Result := FModelFilename;
+  Result := FModelInfo;
 end;
 
 function  TDllama.DoInference(const APrompt: string; var AResult: string; AUsage: TDllama.PUsage): Boolean;
@@ -332,12 +365,14 @@ var
   LCandidatesP: llama_token_data_array;
   LNewTokenId: llama_token;
   LToken: string;
+
   LNBatch: Int32;
   LTokenData: llama_token_data;
   LTimings: llama_timings;
 begin
   Result := False;
   AResult := '';
+
   LNLen := FContexParams.n_ctx;
 
   LAddBos := llama_should_add_bos_token(FModel);
@@ -394,6 +429,9 @@ begin
       end;
 
       LLogits  := llama_get_logits_ith(FContext, LBatch.n_tokens - 1);
+      //LLogitsP := LLogits;
+      //inc(LLogitsP, llama_token_eos(FModel));
+      //LLogitsP^ := 0;
 
       for I := FVocabCount-1 downto 0 do
       begin
@@ -419,8 +457,29 @@ begin
       end;
 
       LToken := llama_token_to_piece(FContext, LNewTokenId);
-      AResult := AResult + LToken;
-      OnInference(LToken);
+
+      // sanitize Json tokens
+      if not LToken.StartsWith('<dummy') then
+      begin
+        if LToken.EndsWith('\', True) then
+          begin
+            FLastToken := LToken;
+          end
+        else
+          begin
+            if (FLastToken.EndsWith('\', True)) then
+            if (LToken = 'n') or (LToken = 'r') or (LToken = 'b') or (LToken = 't') or
+               (LToken = 'f') or (LToken = '/') or (LToken = '"') or (LToken = '\') then
+            begin
+              LToken := FLastToken + LToken;
+              LToken := Utils.SanitizeFromJson(LToken);
+              FLastToken := '';
+            end;
+
+            AResult := AResult + LToken;
+            OnInference(LToken);
+          end;
+      end;
 
       llama_batch_clear(LBatch);
       llama_batch_add(LBatch, LNewTokenId, LNCur, [0], true);
@@ -509,7 +568,7 @@ begin
   FMessages.Add(LMessage);
 end;
 
-function  TDllama.GetInferencePrompt(const AEndWithAssistantMsg: Boolean): string;
+function  TDllama.GetInferencePrompt(): string;
 var
   LSize: Int32;
   LRes: Int32;
@@ -545,7 +604,8 @@ begin
   end;
   SetLength(LResult, LRes);
   Result := Utf8ToString(LResult);
-  if AEndWithAssistantMsg then
+
+  if FModelInfo.EndWithAssistantMsg then
     Result := Result + '\n <|im_start|>assistant\n';
 end;
 
@@ -570,7 +630,8 @@ var
 begin
   Result := False;
   if FMessages.Count = 0 then Exit;
-  LMessages := GetInferencePrompt(True);
+  LMessages := GetInferencePrompt();
+  FLastToken := '';
   Result := DoInference(LMessages, AResponse, AUsage)
 end;
 

@@ -71,6 +71,7 @@ interface
 uses
   System.Generics.Collections,
   System.SysUtils,
+  System.StrUtils,
   System.Classes,
   System.IOUtils,
   System.DateUtils,
@@ -195,7 +196,7 @@ type
     class function  TimeDifference(ANow, AThen: TDateTime): Double;
     class function  FormatSeconds(const ASeconds: Single): string;
     class function  MinutesToMilliseconds(const AMinutes: Double): Int64;
-
+    class function  ReplaceString(const ASource, ASubStr, AReplaceStr: string; N: Integer): string;
   end;
 
   { TAsyncProc }
@@ -1625,6 +1626,29 @@ end;
 class function Utils.MinutesToMilliseconds(const AMinutes: Double): Int64;
 begin
   Result := Round(AMinutes * 60000);
+end;
+
+class function Utils.ReplaceString(const ASource, ASubStr, AReplaceStr: string; N: Integer): string;
+var
+  LPosEx, LPosStart, LCount: Integer;
+begin
+  Result := ASource;
+  LCount := 0;
+  LPosStart := 1;
+  repeat
+    LPosEx := PosEx(ASubStr, Result, LPosStart);
+    if LPosEx > 0 then
+    begin
+      Inc(LCount);
+      if LCount = N then
+      begin
+        Delete(Result, LPosEx, Length(ASubStr));
+        Insert(AReplaceStr, Result, LPosEx);
+        Break;
+      end;
+      LPosStart := LPosEx + Length(ASubStr);
+    end;
+  until LPosEx = 0;
 end;
 
 

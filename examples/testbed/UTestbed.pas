@@ -81,8 +81,8 @@ const
   // update to your model path
   CModelPath = 'C:\LLM\gguf';
 
-  // update to your model filename
-  CModelFilename = 'Hermes-2-Pro-Mistral-7B.Q4_0.gguf';
+  // update to your model reference name
+  CModelName = 'hermes';
 
 type
 
@@ -150,16 +150,19 @@ begin
   // set model path
   SetModelPath(CModelPath);
 
+  // add models
+  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
+
   // try to load model
-  if LoadModel(CModelFilename, 1024) then
+  if LoadModel(CModelName) then
     begin
       // show loaded model filename
       Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelFilename()], Console.CYAN);
+      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelInfo().Filename], Console.CYAN);
 
       // add messages
       AddSystemMessage('You are a helpful AI assistant.');
-      AddUserMessage('How to make KNO3?');
+      AddUserMessage('How do I make KNO3?');
 
       // display user message
       Console.Print(GetUserMessage(), Console.DARKGREEN);
@@ -217,12 +220,16 @@ begin
   // set model path
   SetModelPath(CModelPath);
 
+  // add models
+  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
+
+
   // try to load model
-  if LoadModel(CModelFilename, 1024) then
+  if LoadModel(CModelName) then
     begin
       // show loaded model filename
       Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelFilename()], Console.CYAN);
+      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelInfo().Filename], Console.CYAN);
 
       // add messages
       AddSystemMessage(CSystem);
@@ -265,12 +272,15 @@ begin
   // set model path
   SetModelPath(CModelPath);
 
+  // add models
+  AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
+
   // try to load model
-  if LoadModel(CModelFilename, 1024) then
+  if LoadModel(CModelName) then
     begin
       // show loaded model filename
       Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelFilename()], Console.CYAN);
+      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelInfo().Filename], Console.CYAN);
 
       // add messages
       AddSystemMessage('You are an expert in language translation.');
