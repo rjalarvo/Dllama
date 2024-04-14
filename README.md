@@ -54,7 +54,7 @@ begin
   AddModel('Hermes-2-Pro-Mistral-7B.Q4_0.gguf', 'hermes', 1024, True);
 
   // try to load model
-  if LDllama.LoadModel(CModelName, 1024) then
+  if LDllama.LoadModel(CModelName) then
     begin
       // show loaded model filename
       Console.ClearLine(Console.WHITE);
