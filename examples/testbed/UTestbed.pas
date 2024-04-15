@@ -153,7 +153,7 @@ begin
 
   // add models
   //AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, TDllama.DefaultTemplate, TDllama.DefaultTemplateEnding, TDllama.DefaultSkipTokens);
+  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
   //SaveModelDb();
   LoadModelDb();
 
@@ -226,7 +226,7 @@ begin
 
   // add models
   //AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, TDllama.DefaultTemplate, TDllama.DefaultTemplateEnding, TDllama.DefaultSkipTokens);
+  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
   //SaveModelDb();
   LoadModelDb();
 
@@ -280,7 +280,7 @@ begin
 
   // add models
   //AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, TDllama.DefaultTemplate, TDllama.DefaultTemplateEnding, TDllama.DefaultSkipTokens);
+  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
   //SaveModelDb();
   LoadModelDb();
 
