@@ -704,6 +704,18 @@ type
     class function LoadFromFile(const aFilename: string): TVirtualBuffer<T>;
   end;
 
+  { TMapMemoryToArrayOf }
+  TMapMemoryToArrayOf<T> = class(TObject)
+  protected
+    FMemory: Pointer;
+    function  GetItem(AIndex: Integer): T;
+    procedure SetItem(AIndex: Integer; AValue: T);
+  public
+    constructor Create(const AMemory: Pointer);
+    destructor Destroy(); override;
+    property Item[AIndex: Integer]: T read GetItem write SetItem;
+  end;
+
   { TBaseObject }
   TBaseObject = class
   public
@@ -2712,6 +2724,29 @@ begin
   SetLength(Result, LLength);
   if LLength > 0 then Read(Result[1], LLength * SizeOf(Char));
 end;
+
+{ TMapMemoryToArrayOf }
+function  TMapMemoryToArrayOf<T>.GetItem(AIndex: Integer): T;
+begin
+  Move((PByte(FMemory) + AIndex * SizeOf(T))^, Result, SizeOf(T));
+end;
+
+procedure TMapMemoryToArrayOf<T>.SetItem(AIndex: Integer; AValue: T);
+begin
+  Move(AValue,  (PByte(FMemory) + AIndex * SizeOf(T))^, SizeOf(T));
+end;
+
+constructor TMapMemoryToArrayOf<T>.Create(const AMemory: Pointer);
+begin
+  inherited Create;
+  FMemory := AMemory;
+end;
+
+destructor TMapMemoryToArrayOf<T>.Destroy();
+begin
+  inherited;
+end;
+
 
 { TBaseObject }
 procedure RunObject(const AObject: TBaseObjectClass);

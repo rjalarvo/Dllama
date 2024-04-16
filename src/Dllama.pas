@@ -91,6 +91,11 @@ const
 type
   { TDllama }
   TDllama = class(TBaseObject)
+  public const
+     Temperature = 0;
+     TEMPERATURE_PERCISE  = 0.0;
+     TEMPREATURE_BALANCED = 0.5;
+     TEMPREATURE_CREATIVE = 1.0;
   public type
     PUsage = ^Usage;
     Usage = record
@@ -102,6 +107,7 @@ type
     end;
     ModelInfo = record
       Filename: string;
+      RefName: string;
       MaxContext: UInt64;
       Template: string;
       TemplateEnding: string;
@@ -131,6 +137,8 @@ type
     FLastToken: string;
     FModels: TModels;
     FModelInfo: TDllama.ModelInfo;
+    FInferenceActive: Boolean;
+    FQuitInferenceKey: Byte;
 
     function  IsSkipToken(const AToken: string): Boolean;
     function  GetInferencePrompt(): string;
@@ -165,33 +173,42 @@ type
     function  GetUserMessage(): string;
 
     // inference
+    function  GetQuitInferenceKey(): Byte;
+    procedure SetQuitInferenceKey(const AKey: Byte=VK_ESCAPE);
     function  GetTemperature(): Single;
     procedure SetTemperature(const ATemperature: Single);
-    function  Inference(var AResponse: string; AUsage: TDllama.PUsage=nil): Boolean;
+    function  Inference(const AReferenceName: string; var AResponse: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=TEMPREATURE_BALANCED; const ASeed: UInt32=MaxInt; AUsage: TDllama.PUsage=nil): Boolean;
+    function  IsInferenceActive(): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
 
     // events
     procedure OnCError(const AText: string); virtual;
-    function  OnLoadModelProgress(const AProgress: Single): Boolean; virtual;
+    function  OnLoadModelProgress(const AReferenceName: string; const AProgress: Single): Boolean; virtual;
+    procedure OnLoadModel(const ASuccess: Boolean); virtual;
     procedure OnLog(const ALevel: Integer; const AText: string); virtual;
     procedure OnInference(const AToken: string); virtual;
+
   end;
 
 implementation
 
 { TDllama }
-function TDllama_ModelLoadProgressCallback(progress: single; ctx: pointer): boolean; cdecl;
+function TDllama_ModelLoadProgressCallback(AProgress: single; ACtx: pointer): boolean; cdecl;
+var
+  LDllama: TDllama;
 begin
-  if Assigned(ctx) then
-    Result := TDllama(ctx).OnLoadModelProgress(progress)
+  LDllama := ACtx;
+
+  if Assigned(LDllama) then
+    Result := TDllama(LDllama).OnLoadModelProgress(LDllama.GetModelInfo().RefName, AProgress)
   else
     Result := False;
 end;
 
-procedure TDllama_LogCallback(level: ggml_log_level; const text: PUTF8Char; user_data: Pointer); cdecl;
+procedure TDllama_LogCallback(ALevel: ggml_log_level; const AText: PUTF8Char; AUserData: Pointer); cdecl;
 begin
-  if Assigned(user_data) then
-    TDllama(user_data).OnLog(level, Utf8ToString(text));
+  if Assigned(AUserData) then
+    TDllama(AUserData).OnLog(ALevel, Utf8ToString(AText));
 end;
 
 procedure TDllama_CErrCallback(const text: PUTF8Char; user_data: Pointer); cdecl;
@@ -205,6 +222,7 @@ begin
   inherited;
   FModels := TModels.Create();
   FMessages := TMessages.Create();
+  SetQuitInferenceKey(VK_ESCAPE);
 end;
 
 destructor TDllama.Destroy();
@@ -247,6 +265,7 @@ var
   I: Integer;
 begin
   LModelInfo.Filename := AFilename;
+  LModelInfo.RefName := AReferenceName;
   LModelInfo.MaxContext := AMaxContext;
   LModelInfo.Template := ATemplate;
   LModelInfo.TemplateEnding := ATemplateEnding;
@@ -271,69 +290,72 @@ var
 begin
   Result := False;
   if Assigned(FModel) then Exit;
-
-  if not FModels.TryGetValue(AReferenceName, FModelInfo) then
-  begin
-    SetError('Refrence model "%s" not found.', [AReferenceName]);
-    Exit;
-  end;
-
-  LFilename := TPath.Combine(FModelPath, FModelInfo.Filename);
-  if not TFile.Exists(LFilename) then Exit;
-
-  redirect_cerr_to_callback(TDllama_CErrCallback, Self);
-  llama_log_set(TDllama_LogCallback, Self);
-
-  llama_backend_init();
-
-  llama_numa_init(GGML_NUMA_STRATEGY_DISTRIBUTE);
-
-  FModelParams := llama_model_default_params();
-  FModelParams.progress_callback_user_data := Self;
-  FModelParams.progress_callback := TDllama_ModelLoadProgressCallback;
-
-  {TODO: figure how to find the actual number of gpu layers available. For now,
-         setting to a super high value will cause it to use the max number
-         that is actually available. For my GPU it's 33 for example. }
-  FModelParams.n_gpu_layers := 1000;
-
-  FModel := llama_load_model_from_file(Utils.AsUTF8(LFilename), FModelParams);
-  if not Assigned(FModel) then
-  begin
-    llama_backend_free();
-    restore_cerr();
-    SetError('Unable to load model: "%s"', [LFilename]);
-    UnloadModel();
-    Exit;
-  end;
-
-  FVocabCount := llama_n_vocab(FModel);
   try
-    FCandidates := TVirtualBuffer<llama_token_data>.Create(FVocabCount);
-  except
-    On E: Exception do
+    if not FModels.TryGetValue(AReferenceName, FModelInfo) then
     begin
-      SetError(E.Message, []);
+      SetError('Refrence model "%s" not found.', [AReferenceName]);
+      Exit;
     end;
+
+    LFilename := TPath.Combine(FModelPath, FModelInfo.Filename);
+    if not TFile.Exists(LFilename) then Exit;
+
+    redirect_cerr_to_callback(TDllama_CErrCallback, Self);
+    llama_log_set(TDllama_LogCallback, Self);
+
+    llama_backend_init();
+
+    llama_numa_init(GGML_NUMA_STRATEGY_DISTRIBUTE);
+
+    FModelParams := llama_model_default_params();
+    FModelParams.progress_callback_user_data := Self;
+    FModelParams.progress_callback := TDllama_ModelLoadProgressCallback;
+
+    {TODO: figure how to find the actual number of gpu layers available. For now,
+           setting to a super high value will cause it to use the max number
+           that is actually available. For my GPU it's 33 for example. }
+    FModelParams.n_gpu_layers := 1000;
+
+    FModel := llama_load_model_from_file(Utils.AsUTF8(LFilename), FModelParams);
+    if not Assigned(FModel) then
+    begin
+      llama_backend_free();
+      restore_cerr();
+      SetError('Unable to load model: "%s"', [LFilename]);
+      UnloadModel();
+      Exit;
+    end;
+
+    FContexParams := llama_context_default_params();
+    FContexParams.offload_kqv := true;
+    FContexParams.seed  := MaxInt;
+    FContexParams.n_ctx := FModelInfo.MaxContext;
+    FContexParams.n_threads := Utils.GetPhysicalProcessorCount();
+    FContexParams.n_threads_batch := FContexParams.n_threads;
+    FContext := llama_new_context_with_model(FModel, FContexParams);
+    if not Assigned(FContext) then
+    begin
+      SetError('Failed to create llama context', []);
+      UnloadModel();
+      Exit;
+    end;
+
+    FVocabCount := llama_n_vocab(FModel);
+    try
+      FCandidates := TVirtualBuffer<llama_token_data>.Create(FVocabCount);
+    except
+      On E: Exception do
+      begin
+        SetError(E.Message, []);
+      end;
+    end;
+
+    SetTemperature(0);
+
+    Result := True;
+  finally
+    OnLoadModel(Result);
   end;
-
-  FContexParams := llama_context_default_params();
-  FContexParams.offload_kqv := true;
-  FContexParams.seed  := MaxInt;
-  FContexParams.n_ctx := FModelInfo.MaxContext;
-  FContexParams.n_threads := Utils.GetPhysicalProcessorCount();
-  FContexParams.n_threads_batch := FContexParams.n_threads;
-  FContext := llama_new_context_with_model(FModel, FContexParams);
-  if not Assigned(FContext) then
-  begin
-    SetError('Failed to create llama context', []);
-    UnloadModel();
-    Exit;
-  end;
-
-  SetTemperature(0);
-
-  Result := True;
 end;
 
 procedure TDllama.UnloadModel();
@@ -346,24 +368,22 @@ begin
     FCandidates := nil;
   end;
 
-  if Assigned(FModel) then
-  begin
-    llama_free_model(FModel);
-    FModel := nil;
-    FModelInfo.Filename := '';
-    FModelInfo.MaxContext := 0;
-    FModelInfo.Template := '';
-    FModelInfo.TemplateEnding := '';
-  end;
-
   if Assigned(FContext) then
   begin
     llama_free(FContext);
     FContext := nil;
   end;
 
+  if Assigned(FModel) then
+  begin
+    llama_free_model(FModel);
+    FModel := nil;
+  end;
+
   llama_backend_free();
   restore_cerr();
+
+  FModelInfo := Default(TDllama.ModelInfo);
 end;
 
 function  TDllama.ModelLoaded(): Boolean;
@@ -426,7 +446,6 @@ var
   LModelInfo: TDllama.ModelInfo;
   LSkipTokens: TJsonArray;
   I,J: Integer;
-  LRefName: string;
 begin
   Result := False;
   if AFilename.IsEmpty then Exit;
@@ -446,7 +465,7 @@ begin
     for I := 0 to LCount-1 do
     begin
       LModelInfo.Filename := LJson.A['Models'].Items[I].FindValue('Filename').Value;
-      LRefName := LJson.A['Models'].Items[I].FindValue('RefName').Value;
+      LModelInfo.RefName := LJson.A['Models'].Items[I].FindValue('RefName').Value;
       LModelInfo.MaxContext := LJson.A['Models'].Items[I].FindValue('MaxContext').Value.ToInt64;
       LModelInfo.Template := LJson.A['Models'].Items[I].FindValue('Template').Value;
       LModelInfo.TemplateEnding := LJson.A['Models'].Items[I].FindValue('TemplateEnding').Value;
@@ -458,7 +477,7 @@ begin
          LModelInfo.SkipTokens[J] := LSkipTokens.Items[J].Value;
       end;
 
-      AddModel(LModelInfo.Filename, LRefName, LModelInfo.MaxContext, LModelInfo.Template, LModelInfo.TemplateEnding, LModelInfo.SkipTokens);
+      AddModel(LModelInfo.Filename, LModelInfo.RefName, LModelInfo.MaxContext, LModelInfo.Template, LModelInfo.TemplateEnding, LModelInfo.SkipTokens);
     end;
 
   finally
@@ -489,131 +508,42 @@ begin
   Result := False;
   AResult := '';
   LFirstToken := True;
-
-  LNLen := FContexParams.n_ctx;
-
-  LAddBos := llama_should_add_bos_token(FModel);
-  LMaxTokens := Aprompt.Length + Ord(LAddBos);
-
-  SetLength(LTokens, LMaxTokens);
-  LTokenCount := llama_tokenize(FModel, Utils.AsUTF8(Aprompt), LMaxTokens, @LTokens[0], LMaxTokens, LAddBos, true);
-
-  LNCtx    := llama_n_ctx(FContext);
-  LNkvReq := LTokenCount + (LNLen - LTokenCount);
-
-  if (LNkvReq > LNCtx) then
-  begin
-    SetError('The required KV cache size is not big enough', []);
-    UnloadModel();
-    exit;
-  end;
-
-  LNBatch := llama_n_batch(FContext);
-  LBatch := llama_batch_init(LNBatch, 0, 1);
+  FInferenceActive := True;
   try
-    for I := 0 to LTokenCount-1 do
+    LNLen := FContexParams.n_ctx;
+
+    LAddBos := llama_should_add_bos_token(FModel);
+    LMaxTokens := Aprompt.Length + Ord(LAddBos);
+
+    SetLength(LTokens, LMaxTokens);
+    LTokenCount := llama_tokenize(FModel, Utils.AsUTF8(Aprompt), LMaxTokens, @LTokens[0], LMaxTokens, LAddBos, true);
+
+    LNCtx    := llama_n_ctx(FContext);
+    LNkvReq := LTokenCount + (LNLen - LTokenCount);
+
+    if (LNkvReq > LNCtx) then
     begin
-      llama_batch_add(LBatch, LTokens[I], I, [0], false);
+      SetError('The required KV cache size is not big enough', []);
+      UnloadModel();
+      exit;
     end;
 
-    LBatchLogitsP := LBatch.logits;
-    Inc(LBatchLogitsP, LBatch.n_tokens - 1);
-    LBatchLogitsP^ := Ord(true);
-
+    LNBatch := llama_n_batch(FContext);
+    LBatch := llama_batch_init(LNBatch, 0, 1);
     try
-      if llama_decode(FContext, LBatch) <> 0 then
+      for I := 0 to LTokenCount-1 do
       begin
-        SetError('llama decode failed', []);
-        UnloadModel();
-        Exit;
-      end;
-    except
-      on E: Exception do
-      begin
-        SetError(E.Message, []);
-        UnloadModel();
-        Exit;
-      end;
-    end;
-
-    LNCur := LBatch.n_tokens;
-
-    while (LNCur <= LNLen)  do
-    begin
-      if Console.WasKeyPressed(VK_ESCAPE) then
-      begin
-        Break;
+        llama_batch_add(LBatch, LTokens[I], I, [0], false);
       end;
 
-      LLogits  := llama_get_logits_ith(FContext, LBatch.n_tokens - 1);
-
-      for I := FVocabCount-1 downto 0 do
-      begin
-        LTokenData.id := I;
-        LLogitsP := LLogits;
-        inc(LLogitsP, I);
-        LTokenData.logit := LLogitsP^;
-        LTokenData.p := 0;
-        FCandidates.Item[I] := LTokenData;
-      end;
-
-      LCandidatesP.data := FCandidates.Memory;
-      LCandidatesP.size := FVocabCount + 1;
-      LCandidatesP.sorted := False;
-
-      llama_sample_temp(FContext, @LCandidatesP, FTemperature);
-      LNewTokenId := llama_sample_token_greedy(FContext, @LCandidatesP);
-
-      if (llama_token_eos(FModel) = LNewTokenId) or (LNCur = LNLen) then
-      begin
-        // reached end of inference
-        Break;
-      end;
-
-      LToken := llama_token_to_piece(FContext, LNewTokenId);
-
-      // trim leading whitespace of first non-BOS token
-      if llama_token_bos(FModel) <> LNewTokenId then
-      begin
-        if LFirstToken then
-        begin
-          LToken := LToken.TrimLeft;
-          LFirstToken := False;
-        end;
-      end;
-
-      // sanitize token
-      if not IsSkipToken(LToken) then
-      begin
-        if LToken.EndsWith('\', True) then
-          begin
-            FLastToken := LToken;
-          end
-        else
-          begin
-            if (FLastToken.EndsWith('\', True)) then
-            if (LToken = 'n') or (LToken = 'r') or (LToken = 'b') or (LToken = 't') or
-               (LToken = 'f') or (LToken = '/') or (LToken = '"') or (LToken = '\') then
-            begin
-              LToken := FLastToken + LToken;
-              LToken := Utils.SanitizeFromJson(LToken);
-              FLastToken := '';
-            end;
-
-            AResult := AResult + LToken;
-            OnInference(LToken);
-          end;
-      end;
-
-      llama_batch_clear(LBatch);
-      llama_batch_add(LBatch, LNewTokenId, LNCur, [0], true);
-
-      inc(LNCur);
+      LBatchLogitsP := LBatch.logits;
+      Inc(LBatchLogitsP, LBatch.n_tokens - 1);
+      LBatchLogitsP^ := Ord(true);
 
       try
-        if boolean(llama_decode(FContext, LBatch)) then
+        if llama_decode(FContext, LBatch) <> 0 then
         begin
-          SetError('Failed to evaluate', []);
+          SetError('llama decode failed', []);
           UnloadModel();
           Exit;
         end;
@@ -625,18 +555,110 @@ begin
           Exit;
         end;
       end;
+
+      LNCur := LBatch.n_tokens;
+
+      while (LNCur <= LNLen)  do
+      begin
+        if Console.WasKeyPressed(FQuitInferenceKey) then
+        begin
+          Break;
+        end;
+
+        LLogits  := llama_get_logits_ith(FContext, LBatch.n_tokens - 1);
+
+        for I := FVocabCount-1 downto 0 do
+        begin
+          LTokenData.id := I;
+          LLogitsP := LLogits;
+          inc(LLogitsP, I);
+          LTokenData.logit := LLogitsP^;
+          LTokenData.p := 0;
+          FCandidates.Item[I] := LTokenData;
+        end;
+
+        LCandidatesP.data := FCandidates.Memory;
+        LCandidatesP.size := FVocabCount + 1;
+        LCandidatesP.sorted := False;
+
+        llama_sample_temp(FContext, @LCandidatesP, FTemperature);
+        LNewTokenId := llama_sample_token_greedy(FContext, @LCandidatesP);
+
+        if (llama_token_eos(FModel) = LNewTokenId) or (LNCur = LNLen) then
+        begin
+          // reached end of inference
+          Break;
+        end;
+
+        LToken := llama_token_to_piece(FContext, LNewTokenId);
+
+        // trim leading whitespace of first non-BOS token
+        if llama_token_bos(FModel) <> LNewTokenId then
+        begin
+          if LFirstToken then
+          begin
+            LToken := LToken.TrimLeft;
+            LFirstToken := False;
+          end;
+        end;
+
+        // sanitize token
+        if not IsSkipToken(LToken) then
+        begin
+          if LToken.EndsWith('\', True) then
+            begin
+              FLastToken := LToken;
+            end
+          else
+            begin
+              if (FLastToken.EndsWith('\', True)) then
+              if (LToken = 'n') or (LToken = 'r') or (LToken = 'b') or (LToken = 't') or
+                 (LToken = 'f') or (LToken = '/') or (LToken = '"') or (LToken = '\') then
+              begin
+                LToken := FLastToken + LToken;
+                LToken := Utils.SanitizeFromJson(LToken);
+                FLastToken := '';
+              end;
+
+              AResult := AResult + LToken;
+              OnInference(LToken);
+            end;
+        end;
+
+        llama_batch_clear(LBatch);
+        llama_batch_add(LBatch, LNewTokenId, LNCur, [0], true);
+
+        inc(LNCur);
+
+        try
+          if boolean(llama_decode(FContext, LBatch)) then
+          begin
+            SetError('Failed to evaluate', []);
+            UnloadModel();
+            Exit;
+          end;
+        except
+          on E: Exception do
+          begin
+            SetError(E.Message, []);
+            UnloadModel();
+            Exit;
+          end;
+        end;
+      end;
+
+      LTimings := llama_get_timings(FContext);
+      llama_timing_usage(LTimings, FUsage.InputTokens, FUsage.OutputTokens, FUsage.TokenInputSpeed, FUsage.TokenOutputSpeed);
+      FUsage.TotalTokens := FUsage.InputTokens + FUsage.OutputTokens;
+      if Assigned(AUsage) then
+        Ausage^ := FUsage;
+    finally
+      llama_batch_free(LBatch);
     end;
-
-    LTimings := llama_get_timings(FContext);
-    llama_timing_usage(LTimings, FUsage.InputTokens, FUsage.OutputTokens, FUsage.TokenInputSpeed, FUsage.TokenOutputSpeed);
-    FUsage.TotalTokens := FUsage.InputTokens + FUsage.OutputTokens;
-    if Assigned(AUsage) then
-      Ausage^ := FUsage;
+    Result := True;
   finally
-    llama_batch_free(LBatch);
+    FInferenceActive := False;
   end;
-
-  Result := True;
 end;
 
 procedure TDllama.ClearMessages();
@@ -731,20 +753,76 @@ begin
   Result := FTemperature;
 end;
 
+function  TDllama.GetQuitInferenceKey(): Byte;
+begin
+  Result := FQuitInferenceKey;
+end;
+
+procedure TDllama.SetQuitInferenceKey(const AKey: Byte);
+begin
+  FQuitInferenceKey := AKey;
+end;
+
 procedure TDllama.SetTemperature(const ATemperature: Single);
 begin
   FTemperature := EnsureRange(ATemperature, 1e-8, 1);
 end;
 
-function  TDllama.Inference(var AResponse: string; AUsage: TDllama.PUsage): Boolean;
+function  TDllama.Inference(const AReferenceName: string; var AResponse: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32; AUsage: TDllama.PUsage): Boolean;
 var
   LMessages: string;
 begin
   Result := False;
+
+  // no model is loaded
+  if not ModelLoaded() then
+    begin
+      // try to load model
+      if not LoadModel(AReferenceName) then Exit;
+    end
+  else
+    begin
+      // check if requested model is not already loaded
+      if FModelInfo.RefName <> AReferenceName  then
+      begin
+        // unload current model
+        UnloadModel();
+
+        // try to load model
+        if not LoadModel(AReferenceName) then Exit;
+      end;
+    end;
+
+  if Assigned(FContext) then
+  begin
+    llama_free(FContext);
+  end;
+
+  FContexParams := llama_context_default_params();
+  FContexParams.offload_kqv := true;
+  FContexParams.seed  := ASeed;
+  FContexParams.n_ctx := EnsureRange(AMaxTokens, 512, FModelInfo.MaxContext);
+  FContexParams.n_threads := Utils.GetPhysicalProcessorCount();
+  FContexParams.n_threads_batch := FContexParams.n_threads;
+  FContext := llama_new_context_with_model(FModel, FContexParams);
+  if not Assigned(FContext) then
+  begin
+    SetError('Failed to create llama context', []);
+    UnloadModel();
+    Exit;
+  end;
+
   if FMessages.Count = 0 then Exit;
   LMessages := GetInferencePrompt();
   FLastToken := '';
-  Result := DoInference(LMessages, AResponse, AUsage)
+
+  SetTemperature(ATemperature);
+  Result := DoInference(LMessages, AResponse, AUsage);
+end;
+
+function  TDllama.IsInferenceActive(): Boolean;
+begin
+  Result := FInferenceActive;
 end;
 
 procedure TDllama.GetInferenceUsage(var AUsage: TDllama.Usage);
@@ -757,10 +835,15 @@ begin
   Console.Print(AText);
 end;
 
-function  TDllama.OnLoadModelProgress(const AProgress: Single): Boolean;
+function  TDllama.OnLoadModelProgress(const AReferenceName: string; const AProgress: Single): Boolean;
 begin
-  Console.Print(Console.CR+'Loading model (%3.2f%s)...', [AProgress*100, '%']);
+  Console.Print(Console.CR+'Loading model "%s" (%3.2f%s)...', [AReferenceName, AProgress*100, '%']);
   Result := True;
+end;
+
+procedure TDllama.OnLoadModel(const ASuccess: Boolean);
+begin
+  Console.ClearLine(Console.WHITE);
 end;
 
 procedure TDllama.OnLog(const ALevel: Integer; const AText: string);

@@ -155,13 +155,12 @@ begin
   end;
 
   //batch.logits[batch.n_tokens] := logits;
-   logitsPtr := batch.logits;
-   Inc(logitsPtr, batch.n_tokens);
-   logitsPtr^ := Ord(logits);
+  logitsPtr := batch.logits;
+  Inc(logitsPtr, batch.n_tokens);
+  logitsPtr^ := Ord(logits);
 
   Inc(batch.n_tokens);
 end;
-
 
 procedure llama_batch_clear(var batch: llama_batch);
 begin

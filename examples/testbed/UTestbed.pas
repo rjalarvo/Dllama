@@ -81,10 +81,6 @@ const
   // update to your model path
   CModelPath = 'C:\LLM\gguf';
 
-  // update to your model reference name
-  CModelName = 'hermes-mistral';
-  //CModelName = 'dolphin-mistral';
-
 type
 
   { TTBaseTest }
@@ -92,7 +88,6 @@ type
   public
     procedure OnCError(const AText: string); override;
     procedure OnLog(const ALevel: Integer; const AText: string); override;
-    procedure OnInference(const AToken: string); override;
   end;
 
   { TTest01 }
@@ -109,7 +104,6 @@ type
 
   { TTest03 }
   TTest03 = class(TTBaseTest)
-  //TTest03 = class(TDllama)
   public
     procedure Run(); override;
   end;
@@ -129,13 +123,6 @@ begin
   // do not display llama log info
 end;
 
-procedure TTBaseTest.OnInference(const AToken: string);
-begin
-  // display generated token
-  Console.Print(AToken);
-end;
-
-
 { TTest01 }
 procedure TTest01.Run();
 var
@@ -152,40 +139,33 @@ begin
   SetModelPath(CModelPath);
 
   // add models
-  //AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
-  //SaveModelDb();
-  LoadModelDb();
+  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 32768, '<|im_start|>%s\n %s<|im_end|>', '', []);
+  AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 8192, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
 
-  // try to load model
-  if LoadModel(CModelName) then
+  // save models to database
+  SaveModelDb();
+
+  // add messages
+  AddSystemMessage('You are a helpful AI assistant.');
+  AddUserMessage('How do I make KNO3?');
+
+  // display user message
+  Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
+
+  // do inference - use "dolphin-mistral" model
+  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 1234, @LUsage) then
     begin
-      // show loaded model filename
-      Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelInfo().Filename], Console.CYAN);
-
-      // add messages
-      AddSystemMessage('You are a helpful AI assistant.');
-      AddUserMessage('How do I make KNO3?');
-
-      // display user message
-      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-
-      // do inference
-      if Inference(LResponse, @LUsage) then
-      begin
-        // display usage
-        Console.PrintLn();
-        Console.PrintLn();
-        Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-        Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-      end;
-      // unload model
-      UnloadModel();
+      // display usage
+      Console.PrintLn();
+      Console.PrintLn();
+      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
+      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
     end
   else
-    // failed to load model
-    Console.Print(Console.CRLF+'failed to load model!', Console.RED)
+    begin
+      // display errors
+      Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
+    end;
 end;
 
 
@@ -224,42 +204,31 @@ begin
   // set model path
   SetModelPath(CModelPath);
 
-  // add models
-  //AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
-  //SaveModelDb();
+  // load models info from database
   LoadModelDb();
 
-  // try to load model
-  if LoadModel(CModelName) then
+  // add messages
+  AddSystemMessage(CSystem);
+  AddUserMessage(CUser);
+  AddToolMessage(CToolResponse);
+
+  // display user message
+  Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
+
+  // do inference - use "hermes-mistral" model for function calling support
+  if Inference('hermes-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 4567, @LUsage) then
     begin
-      // show loaded model filename
-      Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelInfo().Filename], Console.CYAN);
-
-      // add messages
-      AddSystemMessage(CSystem);
-      AddUserMessage(CUser);
-      AddToolMessage(CToolResponse);
-
-      // display user message
-      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-
-      // do inference
-      if Inference(LResponse, @LUsage) then
-      begin
-        // display usage
-        Console.PrintLn();
-        Console.PrintLn();
-        Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-        Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-      end;
-      // unload model
-      UnloadModel();
+      // display usage
+      Console.PrintLn();
+      Console.PrintLn();
+      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
+      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
     end
   else
-    // failed to load model
-    Console.Print(Console.CRLF+'failed to load model!', Console.RED)
+    begin
+      // display errors
+      Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
+    end;
 end;
 
 
@@ -278,41 +247,30 @@ begin
   // set model path
   SetModelPath(CModelPath);
 
-  // add models
-  //AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  //AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 1024, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
-  //SaveModelDb();
+  // load models info from database
   LoadModelDb();
 
-  // try to load model
-  if LoadModel(CModelName) then
+  // add messages
+  AddSystemMessage('You are an expert in language translation.');
+  AddUserMessage('Convert to Spanish and Chinese: Hello, how are you?');
+
+  // display user message
+  Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
+
+  // do inference - use "dolphin-minstral" model
+  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 891011, @LUsage) then
     begin
-      // show loaded model filename
-      Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelInfo().Filename], Console.CYAN);
-
-      // add messages
-      AddSystemMessage('You are an expert in language translation.');
-      AddUserMessage('Convert to Spanish and Chinese: Hello, how are you?');
-
-      // display user message
-      Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-  
-      // do inference
-      if Inference(LResponse, @LUsage) then
-      begin
-        // display usage
-        Console.PrintLn();
-        Console.PrintLn();
-        Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-        Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-      end;
-      // unload model
-      UnloadModel();
+      // display usage
+      Console.PrintLn();
+      Console.PrintLn();
+      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
+      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
     end
   else
-    // failed to load model
-    Console.Print(Console.CRLF+'failed to load model!', Console.RED)
+    begin
+      // display errors
+      Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
+    end;
 end;
 
 procedure RunTests();

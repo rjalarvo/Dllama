@@ -12,7 +12,7 @@ A simple and easy to use library for doing LLM inference directly from <a href="
 - Download <a href="https://github.com/tinyBigGAMES/Dllama/archive/refs/heads/main.zip" target="_blank">Dllama</a> and extract to a desired location. 
 - Download a GGUF model from Hugging Face (only the ones that are supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). See <a href="docs/models.txt" target="_blank">models.txt</a>.
 - If you have a CUDA supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
-- See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi. Be sure to update the `CModelPath` and `CModelName` constants used by the examples to valid values on your system.
+- See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi. Be sure to update the `CModelPath` constant used by the examples to valid values on your system.
 - This project was built using Delphi 12.1 (latest), Windows 11 (latest), Intel Core i5-12400F 2500 Mhz 6 Cores, 12 logical, 36GB RAM, NVIDIA RTX 3060 GPU 12GB RAM.
 - You MUST include **Dllama.dll** with your projects. It's just a dependency DLL, containing compiled 3rd party open-source C libraries used to make this project. See <a href="THIRDPARTY.md" target="_blank">THIRDPARTY.md</a> for details.
 - Please test it and feel free to submit pull requests. I want to make it into something very cool for us Delphi developers.
@@ -30,14 +30,12 @@ const
   // update to your model path
   CModelPath = 'C:\LLM\gguf';
 
-  // update to your model reference name
-  CModelName = 'hermes';
-  
 var
   LOllama: TDllama;
   LUsage: TDllama.Usage;
   LResponse: string;
   LUsage: TDllama.Usage;  
+  
 begin
   // clear console
   Console.Clear();
@@ -51,40 +49,32 @@ begin
   LDllama.SetModelPath(CModelPath);
   
   // add models
-  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 1024, '<|im_start|>%s\n %s<|im_end|>', '', []);
+  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 32768, 
+    '<|im_start|>%s\n %s<|im_end|>', '', []);
 
-  // try to load model
-  if LDllama.LoadModel(CModelName) then
+  // add messages
+  LDllama.AddSystemMessage('You are a helpful AI assistant.');
+  LDllama.AddUserMessage('What is KNO3?');
+
+  // display user message
+  Console.Print(LDllama.GetUserMessage(), Console.DARKGREEN);
+
+  // do inference
+  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 1234, @LUsage) then
     begin
-      // show loaded model filename
-      Console.ClearLine(Console.WHITE);
-      Console.Print('Loaded model: "%s"'+Console.CRLF+Console.CRLF, [GetModelFilename()], Console.CYAN);
-
-      // add messages
-      LDllama.AddSystemMessage('You are a helpful AI assistant.');
-      LDllama.AddUserMessage('How to make KNO3?');
-
-      // display user message
-      Console.Print(LDllama.GetUserMessage(), Console.DARKGREEN);
-
-      // do inference
-      if LDllama.Inference(LResponse, @LUsage) then
-      begin
-        // display usage
-        Console.PrintLn();
-        Console.PrintLn();
-        Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', 
-          [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-        Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', 
-          [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-      end;
-      // unload model
-      LDllama.UnloadModel();
+      // display usage
+      Console.PrintLn();
+      Console.PrintLn();
+      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', 
+        [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
+      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', 
+        [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
     end
   else
-    // failed to load model
-    Console.Print(Console.CRLF+'failed to load model!', Console.RED)
-    
+    begin
+      // display errors
+      Console.Print(Console.CRLF+'failed to load model!', Console.RED)
+     end;
   LDllama.Free();   
 end.
 ```

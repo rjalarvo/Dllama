@@ -3,7 +3,7 @@
         {
             "Filename": "dolphin-2.8-mistral-7b-v02.Q6_K.gguf",
             "RefName": "dolphin-mistral",
-            "MaxContext": 1024,
+            "MaxContext": 32768,
             "Template": "<|im_start|>%s\\n %s<|im_end|>",
             "TemplateEnding": "",
             "SkipTokens": [
@@ -12,7 +12,7 @@
         {
             "Filename": "Hermes-2-Pro-Mistral-7B.Q6_K.gguf",
             "RefName": "hermes-mistral",
-            "MaxContext": 1024,
+            "MaxContext": 8192,
             "Template": "<|im_start|>%s\\n %s\\n<|im_end|>",
             "TemplateEnding": "\\n <|im_start|>assistant\\n",
             "SkipTokens": [
