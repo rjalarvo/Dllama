@@ -169,7 +169,7 @@ type
     procedure AddSystemMessageFromFile(const AFilename: string);
     procedure AddUserMessage(const AMessage: string);
     procedure AddAssistantMessage(const AMessage: string);
-    procedure AddToolMessage(const AMessage: string);
+    procedure AddCustomRoleMessage(const ARole, AMessage: string);
     function  GetUserMessage(): string;
 
     // inference
@@ -412,6 +412,7 @@ begin
 
   LJson := TJsonObject.Create();
   try
+    LJson.S['Model Path'] := FModelPath;
     with LJson.AddArray('Models') do
     begin
       for LModelInfo in FModels do
@@ -479,6 +480,8 @@ begin
 
       AddModel(LModelInfo.Filename, LModelInfo.RefName, LModelInfo.MaxContext, LModelInfo.Template, LModelInfo.TemplateEnding, LModelInfo.SkipTokens);
     end;
+
+    FModelPath := LJson.S['Model Path'];
 
   finally
     LJson.Free();
@@ -704,12 +707,14 @@ begin
   FUserMessage := AMessage;
 end;
 
-procedure TDllama.AddToolMessage(const AMessage: string);
+procedure TDllama.AddCustomRoleMessage(const ARole, AMessage: string);
 var
   LMessage: TMessage;
 begin
   if AMessage.IsEmpty then Exit;
-  LMessage.Role := 'tool';
+  if ARole.IsEmpty then Exit;
+
+  LMessage.Role := ARole;
   LMessage.Context := AMessage;
   FMessages.Add(LMessage);
 end;

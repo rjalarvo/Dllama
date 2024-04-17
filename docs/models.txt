@@ -19,3 +19,13 @@ Template    : '<|im_start|>%s\n %s\n<|im_end|>'
 Template End: '\n <|im_start|>assistant\n'
 Skip Tokens : ['<dummy00022>', '<dummy00012>', '<dummy00015>']
 More info   : https://huggingface.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF
+
+-----------------------------------------------------------------------------
+Name:       : WizardLM-2-7B
+Discription : Improved performance on complex chat, multilingual, reasoning and agent use cases
+Download    : https://huggingface.co/MaziyarPanahi/WizardLM-2-7B-GGUF/resolve/main/WizardLM-2-7B.Q6_K.gguf?download=true
+Max Context : 32k
+Template    : '%s %s'
+Template End: 'ASSISTANT:'
+Skip Tokens : []
+More info   : https://huggingface.co/MaziyarPanahi/WizardLM-2-7B-GGUF

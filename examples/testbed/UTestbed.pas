@@ -141,13 +141,14 @@ begin
   // add models
   AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 32768, '<|im_start|>%s\n %s<|im_end|>', '', []);
   AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 8192, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
+  AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm-2', 32768, '<|im_start|>%s\n %s<|im_end|>', 'ASSISTANT:', []);
 
   // save models to database
   SaveModelDb();
 
   // add messages
-  AddSystemMessage('You are a helpful AI assistant.');
-  AddUserMessage('How do I make KNO3?');
+  AddSystemMessage('You Dllama, a helpful AI assistant.');
+  AddUserMessage('How to make KNO3?');
 
   // display user message
   Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
@@ -201,16 +202,13 @@ begin
   // display title
   Console.PrintLn('Dllama - Function Calling Example'+Console.CRLF, Console.MAGENTA);
 
-  // set model path
-  SetModelPath(CModelPath);
-
-  // load models info from database
+  // load model info from database
   LoadModelDb();
 
   // add messages
   AddSystemMessage(CSystem);
   AddUserMessage(CUser);
-  AddToolMessage(CToolResponse);
+  AddCustomRoleMessage('tool', CToolResponse);
 
   // display user message
   Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
@@ -244,10 +242,7 @@ begin
   // display title
   Console.PrintLn('Dllama - Language Translation Example'+Console.CRLF, Console.MAGENTA);
 
-  // set model path
-  SetModelPath(CModelPath);
-
-  // load models info from database
+  // load model info from database
   LoadModelDb();
 
   // add messages
@@ -257,8 +252,8 @@ begin
   // display user message
   Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
 
-  // do inference - use "dolphin-minstral" model
-  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 891011, @LUsage) then
+  // do inference - use "wizardlm-2" model
+  if Inference('wizardlm-2', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 891011, @LUsage) then
     begin
       // display usage
       Console.PrintLn();
@@ -275,9 +270,9 @@ end;
 
 procedure RunTests();
 begin
-  RunObject(TTest01);
+  //RunObject(TTest01);
   //RunObject(TTest02);
-  //RunObject(TTest03);
+  RunObject(TTest03);
   Console.Pause();
 end;
 

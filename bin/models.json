@@ -1,14 +1,6 @@
 ﻿{
+    "Model Path": "C:\\LLM\\gguf",
     "Models": [
-        {
-            "Filename": "dolphin-2.8-mistral-7b-v02.Q6_K.gguf",
-            "RefName": "dolphin-mistral",
-            "MaxContext": 32768,
-            "Template": "<|im_start|>%s\\n %s<|im_end|>",
-            "TemplateEnding": "",
-            "SkipTokens": [
-            ]
-        },
         {
             "Filename": "Hermes-2-Pro-Mistral-7B.Q6_K.gguf",
             "RefName": "hermes-mistral",
@@ -19,6 +11,24 @@
                 "<dummy00022>",
                 "<dummy00012>",
                 "<dummy00015>"
+            ]
+        },
+        {
+            "Filename": "WizardLM-2-7B.Q6_K.gguf",
+            "RefName": "wizardlm-2",
+            "MaxContext": 32768,
+            "Template": "<|im_start|>%s\\n %s<|im_end|>",
+            "TemplateEnding": "ASSISTANT:",
+            "SkipTokens": [
+            ]
+        },
+        {
+            "Filename": "dolphin-2.8-mistral-7b-v02.Q6_K.gguf",
+            "RefName": "dolphin-mistral",
+            "MaxContext": 32768,
+            "Template": "<|im_start|>%s\\n %s<|im_end|>",
+            "TemplateEnding": "",
+            "SkipTokens": [
             ]
         }
     ]
