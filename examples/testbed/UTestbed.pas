@@ -108,6 +108,12 @@ type
     procedure Run(); override;
   end;
 
+  { TTest04 }
+  TTest04 = class(TTBaseTest)
+  public
+    procedure Run(); override;
+  end;
+
 procedure RunTests();
 
 implementation
@@ -133,7 +139,7 @@ begin
   Console.Clear();
 
   // display title
-  Console.PrintLn('Dllama - Query Example'+Console.CRLF, Console.MAGENTA);
+  Console.PrintLn('Dllama - Query Example'+Console.CRLF, Console.CYAN);
 
   // set model path
   SetModelPath(CModelPath);
@@ -154,7 +160,7 @@ begin
   Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
 
   // do inference - use "dolphin-mistral" model
-  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 1234, @LUsage) then
+  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 1111, @LUsage) then
     begin
       // display usage
       Console.PrintLn();
@@ -200,7 +206,7 @@ begin
   Console.Clear();
 
   // display title
-  Console.PrintLn('Dllama - Function Calling Example'+Console.CRLF, Console.MAGENTA);
+  Console.PrintLn('Dllama - Function Calling Example'+Console.CRLF, Console.CYAN);
 
   // load model info from database
   LoadModelDb();
@@ -214,7 +220,7 @@ begin
   Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
 
   // do inference - use "hermes-mistral" model for function calling support
-  if Inference('hermes-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 4567, @LUsage) then
+  if Inference('hermes-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 2222, @LUsage) then
     begin
       // display usage
       Console.PrintLn();
@@ -240,7 +246,7 @@ begin
   Console.Clear();
 
   // display title
-  Console.PrintLn('Dllama - Language Translation Example'+Console.CRLF, Console.MAGENTA);
+  Console.PrintLn('Dllama - Language Translation Example'+Console.CRLF, Console.CYAN);
 
   // load model info from database
   LoadModelDb();
@@ -253,7 +259,7 @@ begin
   Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
 
   // do inference - use "wizardlm-2" model
-  if Inference('wizardlm-2', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 891011, @LUsage) then
+  if Inference('wizardlm-2', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 3333, @LUsage) then
     begin
       // display usage
       Console.PrintLn();
@@ -268,11 +274,104 @@ begin
     end;
 end;
 
+
+{ TTest04 }
+procedure TTest04.Run();
+var
+  LQuestion: string;
+  LCmd: string;
+  LResponse: string;
+  LDone: Boolean;
+  LUsage: TDllama.Usage;
+begin
+  // clear console
+  Console.Clear();
+
+  // display title
+  Console.PrintLn('Dllama - Simple Chat Example', Console.CYAN);
+  Console.PrintLn(Console.CRLF+'   Enter /help for help, /quit to quit', Console.BRIGHTYELLOW);
+
+  // set model path
+  SetModelPath(CModelPath);
+
+  // load model info from database
+  LoadModelDb();
+
+  // add messages
+  AddSystemMessage('You are Dllama, a helpful AI assitant. You will answer every question asked by user to the best of your ability.');
+
+  LDone := False;
+  while not LDone do
+  begin
+    Console.PrintLn(Console.CRLF+'Question: ', Console.DARKGREEN);
+    LQuestion := Console.ReadLnX([#0..#255], 255, Console.YELLOW);
+
+    LCmd := LQuestion.ToLower.Trim;
+
+    // process commands
+    if LCmd.StartsWith('/') then
+    begin
+      if SameText(LQuestion.ToLower, '/quit') then
+        begin
+          LDone := True;
+          continue;
+        end
+      else
+      if SameText(LQuestion.ToLower, '/help') then
+        begin
+          Console.PrintLn();
+          Console.PrintLn('[ === COMMANDS === ]', Console.BRIGHTWHITE);
+          Console.PrintLn('/help   - show help', Console.CYAN);
+          Console.PrintLn('/new    - new conversation', Console.CYAN);
+          Console.PrintLn('/quit   - quit', Console.CYAN);
+        end
+      else
+      if SameText(LQuestion.ToLower, '/new') then
+        begin
+          ClearMessages();
+          Console.PrintLn('Starting new conversation', Console.BRIGHTYELLOW);
+        end
+      else
+        begin
+          Console.PrintLn('Invalid command', Console.RED);
+        end;
+      continue;
+    end;
+
+    LQuestion := LQuestion.Trim;
+    if LQuestion.IsEmpty then
+      continue;
+
+    AddUserMessage(LQuestion);
+
+    Console.PrintLn(Console.CRLF+'Answer: ', Console.DARKGREEN);
+
+    if Inference('wizardlm-2', LResponse, 1024*30, TDllama.TEMPERATURE_PERCISE, 4444, @LUsage) then
+      begin
+        AddAssistantMessage(LResponse);
+
+        // display usage
+        Console.PrintLn();
+        Console.PrintLn();
+        Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
+        Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
+      end
+    else
+      begin
+        // display errors
+        Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
+      end;
+  end;
+
+  Console.PrintLn(Console.CRLF+'Thanks for using Dllama Chat, have a nice day!', Console.BRIGHTYELLOW);
+end;
+
 procedure RunTests();
 begin
   //RunObject(TTest01);
   //RunObject(TTest02);
-  RunObject(TTest03);
+  //RunObject(TTest03);
+  RunObject(TTest04);
   Console.Pause();
 end;
 
