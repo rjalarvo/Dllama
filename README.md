@@ -6,7 +6,7 @@
 # Dllama
 
 ### Overview
-A simple and easy to use library for doing local LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a>. It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses <a href="https://www.vulkan.org/" target="_blank">Vulkan</a> back end for acceleration. I'm getting ~25 tokens/sec on my INVIDA RTX 3060 using Vulkan.
+A simple and easy to use library for doing local LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a> (any language with bindings). It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses <a href="https://www.vulkan.org/" target="_blank">Vulkan</a> back end for acceleration. I'm getting ~25 tokens/sec on my INVIDA RTX 3060 using Vulkan.
 
 ### Installation
 - Download <a href="https://github.com/tinyBigGAMES/Dllama/archive/refs/heads/main.zip" target="_blank">Dllama</a> and extract to a desired location. 
