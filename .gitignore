@@ -74,7 +74,7 @@ modules/
 bin/Dllama.Deps.dll.txt
 bin/Dllama.dll.txt
 bin/dump.bat
-bin/models.json
+bin/doc/models.json
 bin/config.json
 !bin/Dllama.Deps.dll
 !bin/Dllama.dll
