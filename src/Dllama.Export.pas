@@ -178,7 +178,7 @@ end;
 procedure Dllama_InitConfig(const AModelPath: PAnsiChar; const ANumGPULayers: Integer; const ADisplayInfo: Boolean; const ACancelInferenceKey: Byte);
 begin
   if not Assigned(LDllama) then Exit;
-  LDllama.InitConfig(string(AModelPath), ANumGPULayers, ADisplayInfo, ACancelInferenceKey);
+  LDllama.InitConfig(UTF8ToUnicodeString(AModelPath), ANumGPULayers, ADisplayInfo, ACancelInferenceKey);
 end;
 
 procedure Dllama_GetConfig(AModelPath: PPAnsiChar; ANumGPULayers: PInteger; ADisplayInfo: PBoolean; ACancelInferenceKey: PByte);
@@ -198,7 +198,7 @@ begin
   Result := False;
   if not Assigned(LDllama) then Exit;
 
-  Result := LDllama.SaveConfig(string(AFilename));
+  Result := LDllama.SaveConfig(UTF8ToUnicodeString(AFilename));
 end;
 
 function  Dllama_LoadConfig(const AFilename: PAnsiChar): Boolean;
@@ -206,7 +206,7 @@ begin
   Result := False;
   if not Assigned(LDllama) then Exit;
 
-  Result := LDllama.LoadConfig(string(AFilename));
+  Result := LDllama.LoadConfig(UTF8ToUnicodeString(AFilename));
 end;
 
 
@@ -223,7 +223,7 @@ procedure Dllama_SetError(const AText: PAnsiChar);
 begin
   if not Assigned(LDllama) then Exit;
 
-  LDllama.SetError(string(AText), [])
+  LDllama.SetError(UTF8ToUnicodeString(AText), [])
 end;
 
 procedure Dllama_ClearError();
@@ -281,7 +281,7 @@ begin
     end;
   end;
 
-  Result := LDllama.AddModel(string(AFilename), string(AName), AMaxContext, string(AChatMessageTemplate), string(AChatMessageTemplateEnd), LStopSequences);
+  Result := LDllama.AddModel(UTF8ToUnicodeString(AFilename), UTF8ToUnicodeString(AName), AMaxContext, UTF8ToUnicodeString(AChatMessageTemplate), UTF8ToUnicodeString(AChatMessageTemplateEnd), LStopSequences);
 
 end;
 
@@ -306,7 +306,7 @@ begin
   Result := False;
   if not Assigned(LDllama) then Exit;
 
-  Result := LDllama.SaveModelDb(string(AFilename));
+  Result := LDllama.SaveModelDb(UTF8ToUnicodeString(AFilename));
 end;
 
 function  Dllama_LoadModelDb(const AFilename: PAnsiChar): Boolean;
@@ -314,7 +314,7 @@ begin
   Result := False;
   if not Assigned(LDllama) then Exit;
 
-  Result := LDllama.LoadModelDb(string(AFilename));
+  Result := LDllama.LoadModelDb(UTF8ToUnicodeString(AFilename));
 end;
 
 function  Dllama_LoadModel(const AName: PAnsiChar): Boolean;
@@ -322,7 +322,7 @@ begin
   Result := False;
   if not Assigned(LDllama) then Exit;
 
-  Result := LDllama.LoadModel(string(AName));
+  Result := LDllama.LoadModel(UTF8ToUnicodeString(AName));
 end;
 
 function  Dllama_IsModelLoaded(): Boolean;
@@ -352,7 +352,7 @@ procedure Dllama_AddMessage(const ARole, AMessage: PAnsiChar);
 begin
   if not Assigned(LDllama) then Exit;
 
-  LDllama.AddMessage(string(ARole), string(AMessage));
+  LDllama.AddMessage(UTF8ToUnicodeString(ARole), UTF8ToUnicodeString(AMessage));
 end;
 
 function  Dllama_GetLastUserMessage(): PAnsiChar;
@@ -437,12 +437,12 @@ end;
 
 procedure Dllama_Console_SetTitle(const ATitle: PAnsiChar);
 begin
-  Console.SetTitle(string(ATitle));
+  Console.SetTitle(UTF8ToUnicodeString(ATitle));
 end;
 
 procedure Dllama_Console_Pause(const AForcePause: Boolean; aColor: Word; const aMsg: PAnsiChar);
 begin
-  Console.Pause(AForcePause, AColor, string(AMsg));
+  Console.Pause(AForcePause, AColor, UTF8ToUnicodeString(AMsg));
 end;
 
 procedure Dllama_Console_Print(const AText: PAnsiChar; const AColor: Word);
@@ -452,7 +452,7 @@ end;
 
 procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word);
 begin
-  Console.PrintLn(string(AText), AColor);
+  Console.PrintLn(UTF8ToUnicodeString(AText), AColor);
 end;
 
 
