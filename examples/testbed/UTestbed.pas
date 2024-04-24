@@ -72,307 +72,207 @@ uses
   System.Classes,
   System.Math,
   WinApi.Windows,
-  Dllama.Deps,
-  Dllama.Deps.Ext,
-  Dllama.Utils,
-  Dllama;
+  Dllama,
+  Dllama.Ext;
 
 const
   // update to your model path
   CModelPath = 'C:\LLM\gguf';
 
-type
-
-  { TTBaseTest }
-  TTBaseTest = class(TDllama)
-  public
-    procedure OnCError(const AText: string); override;
-    procedure OnLog(const ALevel: Integer; const AText: string); override;
-  end;
-
-  { TTest01 }
-  TTest01 = class(TTBaseTest)
-  public
-    procedure Run(); override;
-  end;
-
-  { TTest02 }
-  TTest02 = class(TTBaseTest)
-  public
-    procedure Run(); override;
-  end;
-
-  { TTest03 }
-  TTest03 = class(TTBaseTest)
-  public
-    procedure Run(); override;
-  end;
-
-  { TTest04 }
-  TTest04 = class(TTBaseTest)
-  public
-    procedure Run(); override;
-  end;
-
 procedure RunTests();
 
 implementation
 
-{ TTBaseTest }
-procedure TTBaseTest.OnCError(const AText: string);
+// load model progress callback
+function LoadModelProgressCallback(const ASender: Pointer; const AModelName: PAnsiChar; const AProgress: Single): Boolean; cdecl;
 begin
-  // do not display llama cerr info
+  Dllama_Console_Print(CR+'Loading model "%s" (%3.2f%s)...', [AModelName, AProgress*100, '%'], CYAN);
+  Result := True;
 end;
 
-procedure TTBaseTest.OnLog(const ALevel: Integer; const AText: string);
+// load model callback
+procedure LoadModelCallback(const ASender: Pointer; const ASuccess: Boolean); cdecl;
 begin
-  // do not display llama log info
+  Dllama_Console_ClearLine(WHITE);
 end;
 
-{ TTest01 }
-procedure TTest01.Run();
-var
-  LResponse: string;
-  LUsage: TDllama.Usage;
+// inference callback
+procedure InferenceCallback(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
 begin
-  // clear console
-  Console.Clear();
+  // Handle new tokens
+  case TokenResponse.AddToken(UTF8ToString(AToken)) of
 
-  // display title
-  Console.PrintLn('Dllama - Query Example'+Console.CRLF, Console.CYAN);
+    TTokenPrintAction.paWait:
+      // Do nothing, need more tokens
+      ;
 
-  // set model path
-  SetModelPath(CModelPath);
+    TTokenPrintAction.paAppend:
+      Dllama_Console_Print(TokenResponse.LastWord, [], WHITE);
 
-  // add models
-  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 32768, '<|im_start|>%s\n %s<|im_end|>', '', []);
-  AddModel('Hermes-2-Pro-Mistral-7B.Q6_K.gguf', 'hermes-mistral', 8192, '<|im_start|>%s\n %s\n<|im_end|>', '\n <|im_start|>assistant\n', ['<dummy00022>', '<dummy00012>', '<dummy00015>']);
-  AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm-2', 32768, '<|im_start|>%s\n %s<|im_end|>', 'ASSISTANT:', []);
-
-  // save models to database
-  SaveModelDb();
-
-  // add messages
-  AddSystemMessage('You Dllama, a helpful AI assistant.');
-  AddUserMessage('How to make KNO3?');
-
-  // display user message
-  Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-
-  // do inference - use "dolphin-mistral" model
-  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 1111, @LUsage) then
-    begin
-      // display usage
-      Console.PrintLn();
-      Console.PrintLn();
-      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-    end
-  else
-    begin
-      // display errors
-      Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
-    end;
-end;
-
-
-{ TTest02 }
-procedure TTest02.Run();
-const
-  CSystem =
-  '''
-  You are a function calling AI model. You are provided with function signatures within <tools></tools> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions. Here are the available tools: <tools> {'type': 'function', 'function': {'name': 'get_stock_fundamentals', 'description': 'get_stock_fundamentals(symbol: str) -> dict - Get fundamental data for a given stock symbol using yfinance API.\n\n    Args:\n    symbol (str): The stock symbol.\n\n    Returns:\n    dict: A dictionary containing fundamental data.', 'parameters': {'type': 'object', 'properties': {'symbol': {'type': 'string'}}, 'required': ['symbol']}}}  </tools> Use the following pydantic model json schema for each tool call you will make: {'title': 'FunctionCall', 'type': 'object', 'properties': {'arguments': {'title': 'Arguments', 'type': 'object'}, 'name': {"title": "Name", "type": "string"}}, "required": ["arguments", "name"]} For each function call return a json object with function name and arguments within <tool_call></tool_call> XML tags as follows:
-  <tool_call>
-  {"arguments": <args-dict>, "name": <function-name>}
-  </tool_call>
-  ''';
-
-  CUser =
-  '''
-  Fetch the stock fundamentals data for Tesla (TSLA)
-  ''';
-
-  CToolResponse =
-  '''
-  <tool_response>
-  {"name": "get_stock_fundamentals", "content": {"symbol": "TSLA", "company_name": "Tesla, Inc.", "sector": "Consumer Cyclical", "industry": "Auto Manufacturers", "market_cap": 611384164352, "pe_ratio": 49.604652, "pb_ratio": 9.762013, "dividend_yield": None, "eps": 4.3, "beta": 2.427, "52_week_high": 299.29, "52_week_low": 152.37}}
-  </tool_response>
-  ''';
-var
-  LResponse: string;
-  LUsage: TDllama.Usage;
-begin
-  // clear console
-  Console.Clear();
-
-  // display title
-  Console.PrintLn('Dllama - Function Calling Example'+Console.CRLF, Console.CYAN);
-
-  // load model info from database
-  LoadModelDb();
-
-  // add messages
-  AddSystemMessage(CSystem);
-  AddUserMessage(CUser);
-  AddCustomRoleMessage('tool', CToolResponse);
-
-  // display user message
-  Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-
-  // do inference - use "hermes-mistral" model for function calling support
-  if Inference('hermes-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 2222, @LUsage) then
-    begin
-      // display usage
-      Console.PrintLn();
-      Console.PrintLn();
-      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-    end
-  else
-    begin
-      // display errors
-      Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
-    end;
-end;
-
-
-{ TTest03 }
-procedure TTest03.Run();
-var
-  LResponse: string;
-  LUsage: TDllama.Usage;
-begin
-  // clear console
-  Console.Clear();
-
-  // display title
-  Console.PrintLn('Dllama - Language Translation Example'+Console.CRLF, Console.CYAN);
-
-  // load model info from database
-  LoadModelDb();
-
-  // add messages
-  AddSystemMessage('You are an expert in language translation.');
-  AddUserMessage('Convert to Spanish and Chinese: Hello, how are you?');
-
-  // display user message
-  Console.Print(GetUserMessage()+Console.CRLF, Console.DARKGREEN);
-
-  // do inference - use "wizardlm-2" model
-  if Inference('wizardlm-2', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 3333, @LUsage) then
-    begin
-      // display usage
-      Console.PrintLn();
-      Console.PrintLn();
-      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-    end
-  else
-    begin
-      // display errors
-      Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
-    end;
-end;
-
-
-{ TTest04 }
-procedure TTest04.Run();
-var
-  LQuestion: string;
-  LCmd: string;
-  LResponse: string;
-  LDone: Boolean;
-  LUsage: TDllama.Usage;
-begin
-  // clear console
-  Console.Clear();
-
-  // display title
-  Console.PrintLn('Dllama - Simple Chat Example', Console.CYAN);
-  Console.PrintLn(Console.CRLF+'   Enter /help for help, /quit to quit', Console.BRIGHTYELLOW);
-
-  // set model path
-  SetModelPath(CModelPath);
-
-  // load model info from database
-  LoadModelDb();
-
-  // add messages
-  AddSystemMessage('You are Dllama, a helpful AI assitant. You will answer every question asked by user to the best of your ability.');
-
-  LDone := False;
-  while not LDone do
-  begin
-    Console.PrintLn(Console.CRLF+'Question: ', Console.DARKGREEN);
-    LQuestion := Console.ReadLnX([#0..#255], 255, Console.YELLOW);
-
-    LCmd := LQuestion.ToLower.Trim;
-
-    // process commands
-    if LCmd.StartsWith('/') then
-    begin
-      if SameText(LQuestion.ToLower, '/quit') then
-        begin
-          LDone := True;
-          continue;
-        end
-      else
-      if SameText(LQuestion.ToLower, '/help') then
-        begin
-          Console.PrintLn();
-          Console.PrintLn('[ === COMMANDS === ]', Console.BRIGHTWHITE);
-          Console.PrintLn('/help   - show help', Console.CYAN);
-          Console.PrintLn('/new    - new conversation', Console.CYAN);
-          Console.PrintLn('/quit   - quit', Console.CYAN);
-        end
-      else
-      if SameText(LQuestion.ToLower, '/new') then
-        begin
-          ClearMessages();
-          Console.PrintLn('Starting new conversation', Console.BRIGHTYELLOW);
-        end
-      else
-        begin
-          Console.PrintLn('Invalid command', Console.RED);
-        end;
-      continue;
-    end;
-
-    LQuestion := LQuestion.Trim;
-    if LQuestion.IsEmpty then
-      continue;
-
-    AddUserMessage(LQuestion);
-
-    Console.PrintLn(Console.CRLF+'Answer: ', Console.DARKGREEN);
-
-    if Inference('wizardlm-2', LResponse, 1024*30, TDllama.TEMPERATURE_PERCISE, 4444, @LUsage) then
+    TTokenPrintAction.paNewline:
       begin
-        AddAssistantMessage(LResponse);
-
-        // display usage
-        Console.PrintLn();
-        Console.PrintLn();
-        Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-        Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
-      end
-    else
-      begin
-        // display errors
-        Console.Print(Console.CRLF+'Error: %s', [GetError()], Console.RED)
+        Dllama_Console_Print(CRLF+TokenResponse.LastWord, [], WHITE);
       end;
   end;
+end;
 
-  Console.PrintLn(Console.CRLF+'Thanks for using Dllama Chat, have a nice day!', Console.BRIGHTYELLOW);
+procedure Test01();
+var
+  LResponse: string;
+  LTokenInputSpeed: Single;
+  LTokenOutputSpeed: Single;
+  LInputTokens: Integer;
+  LOutputTokens: Integer;
+  LTotalTokens: Integer;
+begin
+  // init config
+  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
+  Dllama_SaveConfig('config.json');
+
+  // add models
+  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
+  Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
+  Dllama_SaveModelDb('models.json');
+
+  // init callbacks
+  Dllama_SetInferenceCallback(nil, InferenceCallback);
+  Dllama_SetLoadModelProgressCallback(nil, LoadModelProgressCallback);
+  Dllama_SetLoadModelCallback(nil, LoadModelCallback);
+
+  // add messages
+  Dllama_AddMessage(ROLE_SYSTEM, 'you are Dllama, a helpful AI assistant.');
+  Dllama_AddMessage(ROLE_USER, 'What is KNO3?');
+
+  // display user prompt
+  Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
+
+  // do inference
+  if Dllama_Inference('llama3', LResponse) then
+    begin
+      // display usage
+      Dllama_Console_PrintLn(CRLF, [], WHITE);
+      Dllama_GetInferenceUsage(@LTokenInputSpeed, @LTokenOutputSpeed, @LInputTokens, @LOutputTokens, @LTotalTokens);
+      Dllama_Console_PrintLn('Tokens :: Input: %d, Output: %d, Total: %d, Speed: %3.1f t/s', [LInputTokens, LOutputTokens, LTotalTokens, LTokenOutputSpeed], BRIGHTYELLOW);
+    end
+  else
+    begin
+      // display errors
+      Dllama_Console_PrintLn('Error: %s', [Dllama_GetError()], RED);
+    end;
+
+  // unload model
+  Dllama_UnloadModel();
+end;
+
+procedure Test02();
+var
+  LResponse: string;
+  LTokenInputSpeed: Single;
+  LTokenOutputSpeed: Single;
+  LInputTokens: Integer;
+  LOutputTokens: Integer;
+  LTotalTokens: Integer;
+begin
+  // init config
+  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
+  Dllama_SaveConfig('config.json');
+
+  // add models
+  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
+  Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
+  Dllama_SaveModelDb('models.json');
+
+  // init callbacks
+  Dllama_SetInferenceCallback(nil, InferenceCallback);
+  Dllama_SetLoadModelProgressCallback(nil, LoadModelProgressCallback);
+  Dllama_SetLoadModelCallback(nil, LoadModelCallback);
+
+  // add messages
+  Dllama_AddMessage(ROLE_SYSTEM, 'your an export AI assistant in language translation.');
+  Dllama_AddMessage(ROLE_USER, 'Translate to Chinese, Japanese, Spanish and Italian: Hello, how are you?');
+
+  // display user prompt
+  Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
+
+  // do inference
+  if Dllama_Inference('wizardlm2', LResponse) then
+    begin
+      // display usage
+      Dllama_Console_PrintLn(CRLF, [], WHITE);
+      Dllama_GetInferenceUsage(@LTokenInputSpeed, @LTokenOutputSpeed, @LInputTokens, @LOutputTokens, @LTotalTokens);
+      Dllama_Console_PrintLn('Tokens :: Input: %d, Output: %d, Total: %d, Speed: %3.1f t/s', [LInputTokens, LOutputTokens, LTotalTokens, LTokenOutputSpeed], BRIGHTYELLOW);
+    end
+  else
+    begin
+      // display errors
+      Dllama_Console_PrintLn('Error: %s', [Dllama_GetError()], RED);
+    end;
+
+  // unload model
+  Dllama_UnloadModel();
+end;
+
+procedure Test03();
+var
+  LResponse: string;
+  LTokenInputSpeed: Single;
+  LTokenOutputSpeed: Single;
+  LInputTokens: Integer;
+  LOutputTokens: Integer;
+  LTotalTokens: Integer;
+begin
+  // init config
+  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
+  Dllama_SaveConfig('config.json');
+
+  // add models
+  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
+  Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
+  Dllama_SaveModelDb('models.json');
+
+  // init callbacks
+  Dllama_SetInferenceCallback(nil, InferenceCallback);
+  Dllama_SetLoadModelProgressCallback(nil, LoadModelProgressCallback);
+  Dllama_SetLoadModelCallback(nil, LoadModelCallback);
+
+  // add messages
+  Dllama_AddMessage(ROLE_SYSTEM, 'you are Dllama, a helpful AI assistant.');
+  Dllama_AddMessage(ROLE_USER, 'Write a short story about an AI that become sentiant.');
+
+  // display user prompt
+  Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
+
+  // do inference
+  if Dllama_Inference('wizardlm2', LResponse) then
+    begin
+      // display usage
+      Dllama_Console_PrintLn(CRLF, [], WHITE);
+      Dllama_GetInferenceUsage(@LTokenInputSpeed, @LTokenOutputSpeed, @LInputTokens, @LOutputTokens, @LTotalTokens);
+      Dllama_Console_PrintLn('Tokens :: Input: %d, Output: %d, Total: %d, Speed: %3.1f t/s', [LInputTokens, LOutputTokens, LTotalTokens, LTokenOutputSpeed], BRIGHTYELLOW);
+    end
+  else
+    begin
+      // display errors
+      Dllama_Console_PrintLn('Error: %s', [Dllama_GetError()], RED);
+    end;
+
+  // unload model
+  Dllama_UnloadModel();
 end;
 
 procedure RunTests();
+var
+  LProject: string;
 begin
-  //RunObject(TTest01);
-  //RunObject(TTest02);
-  //RunObject(TTest03);
-  RunObject(TTest04);
-  Console.Pause();
+  Dllama_GetVersionInfo(nil, nil, nil, nil, nil, nil, @LProject);
+  Dllama_Console_PrintLn(LProject, [], CYAN);
+  Dllama_Console_PrintLn('', [], WHITE);
+
+  Test01();
+  //Test02();
+  //Test03();
+
+  Dllama_Console_Pause();
 end;
 
 end.

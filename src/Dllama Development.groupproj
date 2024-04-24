@@ -1,0 +1,60 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{5D326F45-35F4-446C-AF35-1993B585C2AC}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="deps\dllama.dll\Dllama.Deps.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Dllama.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\examples\testbed\Testbed.dproj">
+            <Dependencies>Dllama.dproj</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="Dllama_Deps">
+        <MSBuild Projects="deps\dllama.dll\Dllama.Deps.cbproj"/>
+    </Target>
+    <Target Name="Dllama_Deps:Clean">
+        <MSBuild Projects="deps\dllama.dll\Dllama.Deps.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Dllama_Deps:Make">
+        <MSBuild Projects="deps\dllama.dll\Dllama.Deps.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="Dllama">
+        <MSBuild Projects="Dllama.dproj"/>
+    </Target>
+    <Target Name="Dllama:Clean">
+        <MSBuild Projects="Dllama.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Dllama:Make">
+        <MSBuild Projects="Dllama.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Testbed" DependsOnTargets="Dllama">
+        <MSBuild Projects="..\examples\testbed\Testbed.dproj"/>
+    </Target>
+    <Target Name="Testbed:Clean" DependsOnTargets="Dllama:Clean">
+        <MSBuild Projects="..\examples\testbed\Testbed.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Testbed:Make" DependsOnTargets="Dllama:Make">
+        <MSBuild Projects="..\examples\testbed\Testbed.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="Dllama_Deps;Dllama;Testbed"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="Dllama_Deps:Clean;Dllama:Clean;Testbed:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="Dllama_Deps:Make;Dllama:Make;Testbed:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

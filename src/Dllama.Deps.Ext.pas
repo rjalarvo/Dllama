@@ -107,10 +107,10 @@ var
 begin
   Result := '';
 
-  LTokens := Dllama.Deps.llama_token_to_piece(llama_get_model(ctx), token, PUTF8Char(Utils.GetTempStaticBuffer()), 8);
+  LTokens := Dllama.Deps.llama_token_to_piece(llama_get_model(ctx), token, PUTF8Char(Utils.GetTempStaticBuffer()), 8, False);
   if LTokens < 0 then
     begin
-      LCheck := Dllama.Deps.llama_token_to_piece(llama_get_model(ctx), token, PUTF8Char(Utils.GetTempStaticBuffer()), -LTokens);
+      LCheck := Dllama.Deps.llama_token_to_piece(llama_get_model(ctx), token, PUTF8Char(Utils.GetTempStaticBuffer()), -LTokens, False);
       Assert(LCheck = -LTokens);
       Utils.GetTempStaticBuffer[-LTokens] := 0;
     end

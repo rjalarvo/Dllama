@@ -71,8 +71,8 @@ program Testbed;
 uses
   System.SysUtils,
   UTestbed in 'UTestbed.pas',
-  Dllama.Utils in '..\..\src\Dllama.Utils.pas',
-  Dllama in '..\..\src\Dllama.pas';
+  Dllama in '..\..\lib\Dllama.pas',
+  Dllama.Ext in '..\..\lib\Dllama.Ext.pas';
 
 begin
   try

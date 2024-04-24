@@ -129,18 +129,18 @@ type
     class function  IsKeyPressed(AKey: Byte): Boolean;
     class function  WasKeyReleased(AKey: Byte): Boolean;
     class function  WasKeyPressed(AKey: Byte): Boolean;
-    class procedure Pause(const AForcePause: Boolean=False; aColor: DWORD=Console.WHITE; const aMsg: string='');
+    class procedure Pause(const AForcePause: Boolean=False; aColor: WORD=Console.WHITE; const aMsg: string='');
     class procedure ClearKeyboardBuffer();
     class function  ReadKey(): Char;
     class function  ReadLnX(const AAllowedChars: TSysCharSet; AMaxLength: Integer; const AColor:DWORD=Console.WHITE): string;
     class function  WrapTextEx(const ALine: string; AMaxCol: Integer; const ABreakChars: TSysCharSet=[' ', '-', ',', ':', #9]): string;
-    class procedure Print(const AMsg: string; const AArgs: array of const; const AColor: DWORD=Console.WHITE); overload;
-    class procedure Print(const AMsg: string; const AColor: DWORD=Console.WHITE); overload;
-    class procedure PrintLn(const AMsg: string; const AArgs: array of const; const AColor: DWORD=Console.WHITE); overload;
-    class procedure PrintLn(const AMsg: string; const AColor: DWORD=Console.WHITE); overload;
+    class procedure Print(const AMsg: string; const AArgs: array of const; const AColor: WORD=Console.WHITE); overload;
+    class procedure Print(const AMsg: string; const AColor: WORD=Console.WHITE); overload;
+    class procedure PrintLn(const AMsg: string; const AArgs: array of const; const AColor: WORD=Console.WHITE); overload;
+    class procedure PrintLn(const AMsg: string; const AColor: WORD=Console.WHITE); overload;
     class procedure PrintLn(); overload;
     class procedure Print(); overload;
-    class procedure Teletype(const AText: string; const AColor: DWORD=Console.WHITE; const AMargin: Integer=10; const AMinDelay: Integer=0; const AMaxDelay: Integer=3; const ABreakKey: Byte=VK_ESCAPE);
+    class procedure Teletype(const AText: string; const AColor: WORD=Console.WHITE; const AMargin: Integer=10; const AMinDelay: Integer=0; const AMaxDelay: Integer=3; const ABreakKey: Byte=VK_ESCAPE);
   end;
 
   { Utils }
@@ -967,7 +967,7 @@ begin
   end;
 end;
 
-class procedure Console.Pause(const AForcePause: Boolean; aColor: DWORD; const aMsg: string);
+class procedure Console.Pause(const AForcePause: Boolean; aColor: WORD; const aMsg: string);
 var
   LDoPause: Boolean;
 begin
@@ -984,12 +984,11 @@ begin
     if not LDoPause then Exit;
   end;
 
-  SetTextColor(Ord(aColor));
   PrintLn();
   if aMsg.IsEmpty then
-    Print('Press any key to continue... ')
+    Print('Press any key to continue... ', AColor)
   else
-    Print(aMsg);
+    Print(aMsg, AColor);
   WaitForAnyKey();
   PrintLn();
 end;
@@ -1102,30 +1101,38 @@ begin
   Result := LText;
 end;
 
-class procedure Console.Print(const AMsg: string; const AArgs: array of const; const AColor: DWORD);
+class procedure Console.Print(const AMsg: string; const AArgs: array of const; const AColor: WORD);
 begin
   if not HasOutput then Exit;
-  SetTextColor(Ord(AColor));
+  SetTextColor(AColor);
   Write(Format(AMsg, AArgs));
   SetTextColor(WHITE);
 end;
 
-class procedure Console.Print(const AMsg: string; const AColor: DWORD);
+class procedure Console.Print(const AMsg: string; const AColor: WORD);
 begin
-  Print(AMsg, [], AColor);
+  //Print(AMsg, [], AColor);
+  if not HasOutput then Exit;
+  SetTextColor(AColor);
+  Write(AMsg);
+  SetTextColor(WHITE);
 end;
 
-class procedure Console.PrintLn(const AMsg: string; const AArgs: array of const; const AColor: DWORD);
+class procedure Console.PrintLn(const AMsg: string; const AArgs: array of const; const AColor: WORD);
 begin
   if not HasOutput then Exit;
-  SetTextColor(Ord(AColor));
+  SetTextColor(AColor);
   WriteLn(Format(AMsg, AArgs));
   SetTextColor(WHITE);
 end;
 
-class procedure Console.PrintLn(const AMsg: string; const AColor: DWORD);
+class procedure Console.PrintLn(const AMsg: string; const AColor: WORD);
 begin
-  PrintLn(AMsg, [], AColor);
+  //PrintLn(AMsg, [], AColor);
+  if not HasOutput then Exit;
+  SetTextColor(AColor);
+  WriteLn(AMsg);
+  SetTextColor(WHITE);
 end;
 
 class procedure Console.PrintLn();
@@ -1138,7 +1145,7 @@ begin
   Print('');
 end;
 
-class procedure Console.Teletype(const AText: string; const AColor: DWORD; const AMargin: Integer; const AMinDelay: Integer; const AMaxDelay: Integer; const ABreakKey: Byte);
+class procedure Console.Teletype(const AText: string; const AColor: WORD; const AMargin: Integer; const AMinDelay: Integer; const AMaxDelay: Integer; const ABreakKey: Byte);
 const
   {$J+}
   LDelay: Integer = 0;
@@ -2487,8 +2494,14 @@ begin
 end;
 
 function TJsonHelper.GetInteger(AParam: string): integer;
+var
+  AValue: TJSONValue;
 begin
-  Result := StrToIntDef(AParam, 0);
+  Result := 0;
+
+  AValue := FindValue(AParam);
+  if AValue <> nil then
+    Result := AValue.AsType<Integer>;
 end;
 
 function TJsonHelper.GetNames(AIndex: integer): string;

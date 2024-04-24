@@ -70,7 +70,7 @@ interface
 
 const
   {$IF Defined(WIN64)}
-  DLLAMA_DLL = 'Dllama.dll';
+  DLLAMA_DLL = 'Dllama.Deps.dll';
   _PU = '';
   {$ELSE}
     {$MESSAGE Error 'Unsupported platform'}
@@ -1458,7 +1458,7 @@ function ggml_mul_mat(ctx: Pggml_context; a: Pggml_tensor; b: Pggml_tensor): Pgg
 procedure ggml_mul_mat_set_prec(a: Pggml_tensor; prec: ggml_prec); cdecl;
   external DLLAMA_DLL name _PU + 'ggml_mul_mat_set_prec';
 
-function ggml_mul_mat_id(ctx: Pggml_context; &as: Pggml_tensor; ids: Pggml_tensor; id: Integer; b: Pggml_tensor): Pggml_tensor; cdecl;
+function ggml_mul_mat_id(ctx: Pggml_context; &as: Pggml_tensor; b: Pggml_tensor; ids: Pggml_tensor): Pggml_tensor; cdecl;
   external DLLAMA_DLL name _PU + 'ggml_mul_mat_id';
 
 function ggml_out_prod(ctx: Pggml_context; a: Pggml_tensor; b: Pggml_tensor): Pggml_tensor; cdecl;
@@ -2601,6 +2601,9 @@ function llama_token_get_score(const model: Pllama_model; token: llama_token): S
 function llama_token_get_type(const model: Pllama_model; token: llama_token): llama_token_type; cdecl;
   external DLLAMA_DLL name _PU + 'llama_token_get_type';
 
+function llama_token_is_eog(const model: Pllama_model; token: llama_token): Boolean; cdecl;
+  external DLLAMA_DLL name _PU + 'llama_token_is_eog';
+
 function llama_token_bos(const model: Pllama_model): llama_token; cdecl;
   external DLLAMA_DLL name _PU + 'llama_token_bos';
 
@@ -2637,7 +2640,7 @@ function llama_token_eot(const model: Pllama_model): llama_token; cdecl;
 function llama_tokenize(const model: Pllama_model; const text: PUTF8Char; text_len: Int32; tokens: Pllama_token; n_tokens_max: Int32; add_special: Boolean; parse_special: Boolean): Int32; cdecl;
   external DLLAMA_DLL name _PU + 'llama_tokenize';
 
-function llama_token_to_piece(const model: Pllama_model; token: llama_token; buf: PUTF8Char; length: Int32): Int32; cdecl;
+function llama_token_to_piece(const model: Pllama_model; token: llama_token; buf: PUTF8Char; length: Int32; special: Boolean): Int32; cdecl;
   external DLLAMA_DLL name _PU + 'llama_token_to_piece';
 
 function llama_chat_apply_template(const model: Pllama_model; const tmpl: PUTF8Char; const chat: Pllama_chat_message; n_msg: NativeUInt; add_ass: Boolean; buf: PUTF8Char; length: Int32): Int32; cdecl;

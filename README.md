@@ -6,16 +6,19 @@
 # Dllama
 
 ### Overview
-A simple and easy to use library for doing LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a>. It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses CUDA back end for acceleration.
+A simple and easy to use library for doing local LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a>. It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses <a href="https://www.vulkan.org/" target="_blank">Vulkan</a> back end for acceleration. I'm getting ~25 tokens/sec on my INVIDA RTX 3060 using Vulkan.
 
 ### Installation
 - Download <a href="https://github.com/tinyBigGAMES/Dllama/archive/refs/heads/main.zip" target="_blank">Dllama</a> and extract to a desired location. 
-- Download a GGUF model from Hugging Face (only the ones that are supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). See <a href="docs/models.txt" target="_blank">models.txt</a>.
-- If you have a CUDA supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
-- See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi. Be sure to update the `CModelPath` constant used by the examples to valid values on your system.
-- This project was built using Delphi 12.1 (latest), Windows 11 (latest), Intel Core i5-12400F 2500 Mhz 6 Cores, 12 logical, 36GB RAM, NVIDIA RTX 3060 GPU 12GB RAM.
-- You MUST include **Dllama.dll** with your projects. It's just a dependency DLL, containing compiled 3rd party open-source C libraries used to make this project. See <a href="THIRDPARTY.md" target="_blank">THIRDPARTY.md</a> for details.
-- Please test it and feel free to submit pull requests. I want to make it into something very cool for us Delphi developers.
+- Download a GGUF model from Hugging Face (only the ones that are supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). See <a href="docs/MODELS.txt" target="_blank">MODELS.txt</a>.
+- If you have a Vulkan supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
+- See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi.
+- You MUST include `Dllama.Deps.dll` and `Dllama.dll` with your projects.
+- You should be able to use Dllama API from any programming language with appropriate language bindings that supports Win64 and Unicode. Out of the box Delphi/FreePascal is supported. 
+- The latest DLLs are always include in the distro, but if you need to rebuild them you will need RAD Studio 12.1 (C++Builder & Delphi).
+- This project was built using RAD Studio 12.1 (latest), Windows 11 (latest), Intel Core i5-12400F 2500 Mhz 6 Cores, 12 logical, 36GB RAM, NVIDIA RTX 3060 GPU 12GB RAM.
+
+- Please test it and feel free to submit pull requests.
 - If this project is useful to you, consider starring the repo, sponsoring it, spreading the word, etc. Any help is greatly welcomed and appreciated.
 
 ### Examples  
@@ -23,59 +26,47 @@ A query example:
 ```Delphi  
 uses
   System.SysUtils,
-  Dllama.Utils,
-  Dllama;
+  Dllama,
+  Dllama.Ext;
   
-const
-  // update to your model path
-  CModelPath = 'C:\LLM\gguf';
-
-var
-  LOllama: TDllama;
-  LUsage: TDllama.Usage;
+var  
   LResponse: string;
-  LUsage: TDllama.Usage;  
-  
+  LTokenInputSpeed: Single;
+  LTokenOutputSpeed: Single;
+  LInputTokens: Integer;
+  LOutputTokens: Integer;
+  LTotalTokens: Integer;
+
 begin
-  // clear console
-  Console.Clear();
+  // init config
+  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
 
-  // display title
-  Console.PrintLn('Dllama - Query Example'+Console.CRLF, Console.MAGENTA);
-
-  LDllama := TDllama.Create(); 
-
-  // set model path
-  LDllama.SetModelPath(CModelPath);
-  
-  // add models
-  AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphin-mistral', 32768, 
-    '<|im_start|>%s\n %s<|im_end|>', '', []);
+  // add model
+  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>',
+    '\n assistant:\n', ['<|eot_id|>', 'assistant']);
 
   // add messages
-  LDllama.AddSystemMessage('You are a helpful AI assistant.');
-  LDllama.AddUserMessage('What is KNO3?');
+  Dllama_AddMessage(ROLE_SYSTEM, 'you are Dllama, a helpful AI assistant.');
+  Dllama_AddMessage(ROLE_USER, 'who are you?');
 
-  // display user message
-  Console.Print(LDllama.GetUserMessage(), Console.DARKGREEN);
-
+  // display the user prompt
+  Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
+  
   // do inference
-  if Inference('dolphin-mistral', LResponse, 1024, TDllama.TEMPREATURE_BALANCED, 1234, @LUsage) then
+  if Dllama_Inference('llama3', LResponse) then
     begin
       // display usage
-      Console.PrintLn();
-      Console.PrintLn();
-      Console.PrintLn('Tokens :: Input: %d, Output: %d, Total: %d', 
-        [LUsage.InputTokens, LUsage.OutputTokens, LUsage.TotalTokens], Console.BRIGHTYELLOW);
-      Console.PrintLn('Speed  :: Input: %3.2f t/s, Output: %3.2f t/s', 
-        [LUsage.TokenInputSpeed, LUsage.TokenOutputSpeed], Console.BRIGHTYELLOW);
+      Dllama_Console_PrintLn(CRLF, [], WHITE);
+      Dllama_GetInferenceUsage(@LTokenInputSpeed, @LTokenOutputSpeed, @LInputTokens, @LOutputTokens,
+        @LTotalTokens);
+      Dllama_Console_PrintLn('Tokens :: Input: %d, Output: %d, Total: %d, Speed: %3.1f t/s',
+        [LInputTokens, LOutputTokens, LTotalTokens, LTokenOutputSpeed], BRIGHTYELLOW);
     end
   else
     begin
-      // display errors
-      Console.Print(Console.CRLF+'failed to load model!', Console.RED)
-     end;
-  LDllama.Free();   
+      Dllama_Console_PrintLn('Error: %s', [Dllama_GetError()], RED);
+    end;
+  Dllama_UnloadModel();
 end.
 ```
 ### Media
