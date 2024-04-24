@@ -96,6 +96,7 @@ type
     LoadModelProgressCallback = function(const ASender: Pointer; const AModelName: PAnsiChar; const AProgress: Single): Boolean; cdecl;
     LoadModelCallback = procedure(const ASender: Pointer; const ASuccess: Boolean); cdecl;
     InferenceCallback = procedure(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
+    InferenceDoneCallback = procedure(const ASender: Pointer); cdecl;
 
     Model = record
       Filename: string;
@@ -151,6 +152,7 @@ type
     FLoadModelProgressCallback: TCallback<TDllama.LoadModelProgressCallback>;
     FLoadModelCallback: TCallback<LoadModelCallback>;
     FInferenceCallback: TCallback<InferenceCallback>;
+    FInferenceDoneCallback: TCallback<InferenceDoneCallback>;
   public
     // init
     constructor Create(); override;
@@ -191,6 +193,8 @@ type
     // inference
     function  GetInferenceCallback(): TDllama.InferenceCallback;
     procedure SetInferenceCallback(const ASender: Pointer; const AHandler: TDllama.InferenceCallback);
+    function  GetInferenceDoneCallback(): TDllama.InferenceDoneCallback;
+    procedure SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback);
     function  Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=0.5; const ASeed: UInt32=MaxInt): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
 
@@ -200,6 +204,7 @@ type
     procedure OnLoadModel(const ASuccess: Boolean); virtual;
     procedure OnLog(const ALevel: Integer; const AText: string); virtual;
     procedure OnInference(const AToken: string); virtual;
+    procedure OnInferenceDone(); virtual;
   end;
 
 
@@ -764,6 +769,17 @@ begin
   FInferenceCallback.Handler := AHandler;
 end;
 
+function  TDllama.GetInferenceDoneCallback(): TDllama.InferenceDoneCallback;
+begin
+  Result := FInferenceDoneCallback.Handler
+end;
+
+procedure TDllama.SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback);
+begin
+  FInferenceDoneCallback.Sender := ASender;
+  FInferenceDoneCallback.Handler := AHandler;
+end;
+
 function  TDllama.Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
 var
   LAddBos: Boolean;
@@ -786,6 +802,7 @@ var
   LPrompt: string;
   LTemperature: Single;
   LLastToken: string;
+  LSkip: Boolean;
 
   function IsPartEndsWith(const MainStr: string; const AStopTokens: TArray<string>): Boolean;
   var
@@ -933,46 +950,59 @@ begin
 
         LToken := llama_token_to_piece(FContext, LNewTokenId);
 
-        // trim leading whitespace of first non-BOS token
-        if llama_token_bos(FModel) <> LNewTokenId then
-        begin
-          if LFirstToken then
-          begin
-            LToken := LToken.TrimLeft;
-            LFirstToken := False;
-          end;
-        end;
-
-        // sanitize token
-        LToken := Utils.SanitizeFromJson(LToken);
-
-        if LToken.EndsWith('\', True) then
-          begin
-            LLastToken := LToken;
-          end
+        //TODO: some models I get a first token as one of its stop sequences, which will
+        //      terminate the inferance without any input. Not sure what going on, but for
+        //      now I will check for this condition and skip it. More resource in needed to
+        //      see how to properly handle this.
+        if (LFirstToken = True) and (IsAStopToken(LToken, FLoadedModel.StopSequences) = True) then
+          LSkip := True
         else
-          begin
-            if (LLastToken.EndsWith('\', True)) then
-            if (LToken = 'n') or (LToken = 'r') or (LToken = 'b') or (LToken = 't') or
-               (LToken = 'f') or (LToken = '/') or (LToken = '"') or (LToken = '\') then
-            begin
-              LToken := LLastToken + LToken;
-              LToken := Utils.SanitizeFromJson(LToken);
-              LLastToken := '';
-            end;
+          LSkip := False;
 
-            if not IsPartEndsWith(AResponse + LToken, FLoadedModel.StopSequences) then
-              begin
-                AResponse := AResponse + LToken;
-                OnInference(LToken);
-                //write(LToken);
-              end
-            else
-              begin
-                if IsAStopToken(AResponse + LToken, FLoadedModel.StopSequences) then
-                  Break;
-              end;
+        // check to see if we need to skip this token altogether
+        if not LSkip then
+        begin
+          // trim leading whitespace of first non-BOS token
+          if llama_token_bos(FModel) <> LNewTokenId then
+          begin
+            if LFirstToken then
+            begin
+              LToken := LToken.TrimLeft;
+              LFirstToken := False;
+            end;
           end;
+
+          // sanitize token
+          LToken := Utils.SanitizeFromJson(LToken);
+
+          if LToken.EndsWith('\', True) then
+            begin
+              LLastToken := LToken;
+            end
+          else
+            begin
+              if (LLastToken.EndsWith('\', True)) then
+              if (LToken = 'n') or (LToken = 'r') or (LToken = 'b') or (LToken = 't') or
+                 (LToken = 'f') or (LToken = '/') or (LToken = '"') or (LToken = '\') then
+              begin
+                LToken := LLastToken + LToken;
+                LToken := Utils.SanitizeFromJson(LToken);
+                LLastToken := '';
+              end;
+
+              if not IsPartEndsWith(AResponse + LToken, FLoadedModel.StopSequences) then
+                begin
+                  AResponse := AResponse + LToken;
+                  OnInference(LToken);
+                  //write(LToken);
+                end
+              else
+                begin
+                  if IsAStopToken(AResponse + LToken, FLoadedModel.StopSequences) then
+                    Break;
+                end;
+            end;
+        end;
 
         llama_batch_clear(LBatch);
         llama_batch_add(LBatch, LNewTokenId, LNCur, [0], true);
@@ -1005,6 +1035,7 @@ begin
     Result := True;
   finally
     FInferenceActive := False;
+    OnInferenceDone();
   end;
 end;
 
@@ -1052,6 +1083,12 @@ begin
     FInferenceCallback.Handler(FInferenceCallback.Sender, Utils.AsUTF8(AToken))
   else
     Console.Print(AToken);
+end;
+
+procedure TDllama.OnInferenceDone();
+begin
+  if Assigned(FInferenceDoneCallback.Handler) then
+    FInferenceDoneCallback.Handler(FInferenceDoneCallback.Sender);
 end;
 
 

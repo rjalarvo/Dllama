@@ -105,6 +105,7 @@ type
   TDllama_LoadModelProgressCallback = function(const ASender: Pointer; const AModelName: PAnsiChar; const AProgress: Single): Boolean; cdecl;
   TDllama_LoadModelCallback = procedure(const ASender: Pointer; const ASuccess: Boolean); cdecl;
   TDllama_InferenceCallback = procedure(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
+  TDllama_InferenceDoneCallback = procedure(const ASender: Pointer); cdecl;
 
 // Info
 procedure Dllama_GetVersionInfo(AName, ACodeName, AMajorVersion, AMinorVersion, APatchVersion, AVersion, AProject: PPAnsiChar); cdecl; external DLLAMA_DLL;
@@ -141,6 +142,8 @@ function  Dllama_GetLastUserMessage(): PAnsiChar; cdecl; external DLLAMA_DLL;
 // Inference
 function  Dllama_GetInferenceCallback(): TDllama_InferenceCallback; cdecl; external DLLAMA_DLL;
 procedure Dllama_SetInferenceCallback(const ASender: Pointer; const AHandler: TDllama_InferenceCallback); cdecl; external DLLAMA_DLL;
+function  Dllama_GetInferenceDoneCallback(): TDllama_InferenceDoneCallback; cdecl; external DLLAMA_DLL;
+procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama_InferenceDoneCallback); cdecl; external DLLAMA_DLL;
 function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean; cdecl; external DLLAMA_DLL;
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl; external DLLAMA_DLL;
 

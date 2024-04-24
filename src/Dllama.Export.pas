@@ -113,6 +113,8 @@ function  Dllama_GetLastUserMessage(): PAnsiChar; cdecl; exports Dllama_GetLastU
 // Inference
 function  Dllama_GetInferenceCallback(): TDllama.InferenceCallback; cdecl; exports Dllama_GetInferenceCallback;
 procedure Dllama_SetInferenceCallback(const ASender: Pointer; const AHandler: TDllama.InferenceCallback); cdecl; exports Dllama_SetInferenceCallback;
+function  Dllama_GetInferenceDoneCallback(): TDllama.InferenceDoneCallback; cdecl; exports Dllama_GetInferenceDoneCallback;
+procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback); cdecl; exports Dllama_SetInferenceDoneCallback;
 function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean; cdecl; exports Dllama_Inference;
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl; exports Dllama_GetInferenceUsage;
 
@@ -376,6 +378,19 @@ procedure Dllama_SetInferenceCallback(const ASender: Pointer; const AHandler: TD
 begin
   if not Assigned(LDllama) then Exit;
   LDllama.SetInferenceCallback(ASender, AHandler);
+end;
+
+function  Dllama_GetInferenceDoneCallback(): TDllama.InferenceDoneCallback;
+begin
+  Result := nil;
+  if not Assigned(LDllama) then Exit;
+  Result := LDllama.GetInferenceDoneCallback();
+end;
+
+procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback);
+begin
+  if not Assigned(LDllama) then Exit;
+  LDllama.SetInferenceDoneCallback(ASender, AHandler);
 end;
 
 function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;

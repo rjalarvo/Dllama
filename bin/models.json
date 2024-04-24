@@ -1,6 +1,20 @@
 ﻿{
     "Models": [
         {
+            "Filename": "Phi-3-mini-4k-instruct-q4.gguf",
+            "Name": "phi3",
+            "MaxContext": 4096,
+            "ChatMessageTemplate": "%s %s<|end|>",
+            "AChatMessageTemplateEnd": "<|assistant|>",
+            "StopSequences": [
+                "<|user|>",
+                "<|assistant|>",
+                "<|system|>",
+                "<|end|>",
+                "<|endoftext|>"
+            ]
+        },
+        {
             "Filename": "Meta-Llama-3-8B-Instruct-Q6_K.gguf",
             "Name": "llama3",
             "MaxContext": 8192,
