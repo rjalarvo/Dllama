@@ -3,7 +3,7 @@
         <ProjectGuid>{5D326F45-35F4-446C-AF35-1993B585C2AC}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="deps\dllama.dll\Dllama.Deps.cbproj">
+        <Projects Include="deps\dllama\Dllama.Deps.cbproj">
             <Dependencies/>
         </Projects>
         <Projects Include="Dllama.dproj">
@@ -21,13 +21,13 @@
         </BorlandProject>
     </ProjectExtensions>
     <Target Name="Dllama_Deps">
-        <MSBuild Projects="deps\dllama.dll\Dllama.Deps.cbproj"/>
+        <MSBuild Projects="deps\dllama\Dllama.Deps.cbproj"/>
     </Target>
     <Target Name="Dllama_Deps:Clean">
-        <MSBuild Projects="deps\dllama.dll\Dllama.Deps.cbproj" Targets="Clean"/>
+        <MSBuild Projects="deps\dllama\Dllama.Deps.cbproj" Targets="Clean"/>
     </Target>
     <Target Name="Dllama_Deps:Make">
-        <MSBuild Projects="deps\dllama.dll\Dllama.Deps.cbproj" Targets="Make"/>
+        <MSBuild Projects="deps\dllama\Dllama.Deps.cbproj" Targets="Make"/>
     </Target>
     <Target Name="Dllama">
         <MSBuild Projects="Dllama.dproj"/>

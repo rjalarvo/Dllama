@@ -70,6 +70,7 @@ modules/
 
 # Dllama
 *.dsv
+*.d
 bin/Dllama.Deps.dll.txt
 bin/Dllama.dll.txt
 bin/dump.bat
@@ -77,3 +78,4 @@ bin/models.json
 bin/config.json
 !bin/Dllama.Deps.dll
 !bin/Dllama.dll
+src/deps/dllama/win64x
