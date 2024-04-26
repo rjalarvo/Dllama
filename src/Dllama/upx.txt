@@ -1,0 +1,11 @@
+UPX is use when compiling Dllama in "Distro" mode to compress the DLL
+
+1. Download here:
+https://github.com/upx/upx/releases/latest (win64 version)
+
+2. Place UPX.exe in the [distro/src/Dllama] folder or make it accessable from
+   a global path
+
+3. Have a successful build, [distro/srccompress-dllam.cmd] will fire as a
+   post-build event to compress the Dllama.dll to smallest possible size.
+

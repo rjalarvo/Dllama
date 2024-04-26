@@ -79,3 +79,5 @@ bin/config.json
 !bin/Dllama.Deps.dll
 !bin/Dllama.dll
 src/deps/dllama/win64x
+bin/Dllama.pdb
+src/Dllama/Win64x

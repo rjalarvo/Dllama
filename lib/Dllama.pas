@@ -64,6 +64,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 unit Dllama;
 
+{$IFNDEF WIN64}
+  {$MESSAGE Error 'Unsupported platform'}
+{$ENDIF}
+
 interface
 
 const
@@ -158,8 +162,18 @@ procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word); cd
 
 implementation
 
+{$IF CompilerVersion < 34.0} // Delphi 12 corresponds to version 34.0
+uses
+  System.Math;  dd
+{$IFEND}
+
 initialization
 begin
+  {$IF CompilerVersion < 34.0} // Delphi 12 corresponds to version 34.0
+  // disable floating point exceptions
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
+  {$IFEND}
+
   ReportMemoryLeaksOnShutdown := True;
 end;
 

@@ -96,7 +96,7 @@ begin
   Dllama_Console_ClearLine(WHITE);
 end;
 
-// inference callback
+// Inference callback
 procedure InferenceCallback(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
 begin
   // Handle new tokens
@@ -118,7 +118,19 @@ end;
 
 procedure InferenceDoneCallback(const ASender: Pointer); cdecl;
 begin
-  // done inference callback
+
+  // Not sure if this works in the case when it is needed (it's rare I guess). Not sure how to test it.
+  if Dllama.Ext.TokenResponse.Finalize then       // Force potential leftovers into Word array.
+    begin
+      Dllama_Console_PrintLn(CRLF, [], BRIGHTYELLOW);
+      Dllama_Console_PrintLn('Finalize was used, last buffer was:' + Dllama.Ext.TokenResponse.LastWord, [], WHITE);
+      InferenceCallback(nil, '');                 // Handle last word
+    end
+  else
+    begin
+      Dllama_Console_PrintLn(CRLF, [], DARKGREEN);
+      Dllama_Console_PrintLn('Finalize was not needed.', [], BRIGHTYELLOW);
+    end;
 end;
 
 procedure Test01();
@@ -131,13 +143,14 @@ var
   LTotalTokens: Integer;
 begin
   // init config
-  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
+  Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
   Dllama_SaveConfig('config.json');
 
   // add models
   Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
   Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
   Dllama_AddModel('Phi-3-mini-4k-instruct-q4.gguf', 'phi3', 1024*4, '%s %s<|end|>', '<|assistant|>', ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']);
+  Dllama_AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphi-llama3-70b', 1024*8, '<|im_start|>%s \n %s<|im_end|>', '', []);
   Dllama_SaveModelDb('models.json');
 
   // init callbacks
@@ -148,21 +161,13 @@ begin
 
   // add messages
   Dllama_AddMessage('<|system|>', 'you are Dllama, a helpful AI assistant.');
-  //Dllama_AddMessage('<|user|>', 'What is KNO3?');
-  //Dllama_AddMessage('<|user|>', 'Who are you?');
-  //Dllama_AddMessage('<|user|>', 'How to make KNO3?');
-  Dllama_AddMessage('<|user|>', 'Who is bill gates, does he have kids?');
-  //Dllama_AddMessage('<|user|>', '2+2?');
-  //Dllama_AddMessage('<|user|>', 'how to get to jacksonville from miama?');
-  //Dllama_AddMessage('<|user|>', 'write a routine in Delphi to remove all duplicates from a unicode string.');
-  //Dllama_AddMessage('<|user|>', 'tell me a short story about an AI system that became selfaware');
-
+  Dllama_AddMessage('<|user|>', 'What is KNO3?');
 
   // display user prompt
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('llama3', LResponse) then
+  if Dllama_Inference('phi3', LResponse) then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -189,7 +194,7 @@ var
   LTotalTokens: Integer;
 begin
   // init config
-  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
+  Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
   Dllama_SaveConfig('config.json');
 
   // add models
@@ -239,7 +244,7 @@ var
   LTotalTokens: Integer;
 begin
   // init config
-  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
+  Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
   Dllama_SaveConfig('config.json');
 
   // add models
@@ -262,7 +267,7 @@ begin
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('phi3', LResponse) then
+  if Dllama_Inference('llama3', LResponse) then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);

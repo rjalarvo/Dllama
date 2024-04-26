@@ -13,9 +13,9 @@ A simple and easy to use library for doing local LLM inference directly from <a 
 - Download a GGUF model from Hugging Face (only the ones that are supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). See <a href="docs/MODELS.txt" target="_blank">MODELS.txt</a>.
 - If you have a Vulkan supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
 - See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi.
-- You MUST include `Dllama.Deps.dll` and `Dllama.dll` with your projects.
+- You **MUST** include `Dllama.dll` in your project distro.
 - You should be able to use Dllama API from any programming language with appropriate language bindings that supports Win64 and Unicode. Out of the box Delphi/FreePascal is supported. 
-- The latest DLLs are always included in the distro, but if you need to rebuild them you will need RAD Studio 12.1 (C++Builder & Delphi).
+- The latest ship-ready DLLs are always included in the repo, but if you need to rebuild them you will need RAD Studio 12.1 (C++Builder & Delphi).
 - This project was built using RAD Studio 12.1 (latest), Windows 11 (latest), Intel Core i5-12400F 2500 Mhz 6 Cores, 12 logical, 36GB RAM, NVIDIA RTX 3060 GPU 12GB RAM.
 
 - Please test it and feel free to submit pull requests.

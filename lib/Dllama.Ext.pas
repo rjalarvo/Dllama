@@ -73,28 +73,42 @@ uses
 
 type
 
-  // AddToken return messages
+  // AddToken return messages - for TResponse.AddToken
   //  paWait = No new (full) words, just wait for more incoming tokens
   //  Append = Append existing line with latest word
   //  NewLine = start new line then print the latest word
   TTokenPrintAction = (paWait, paAppend, paNewline);
 
-  { TResponse }
+  { TResponse
+  Helper to handle incoming tokens during streaming
+    Example uses:
+    - Tabulate tokens into full words based on wordbreaks
+    - Control wordwrap/linechanges for console or custom GUI without wordwrap functionality
+      (Does change the print resolution from Token to logical words)
+
+
+  }
   TTokenResponse = record
   public
     Raw: String;                  // Full response as is
+    Tokens: array of String;      // Actual tokens
     LineLengthMax: Integer;       // Define confined space, in chars for fixed width font
-    WordBreaks: array of char;    // What is considered a logical line-break
+    WordBreaks: array of char;    // What is considered a logical word-break
+    LineBreaks: array of char;    // What is considered a logical line-break
     Words: array of String;       // Response but as array of "words"
   private
-    LWord: String;                // Internal! current word accumulating
-    LLine: String;                // Internal! for keeping track what has been printed
+    LWord: String;                // Current word accumulating
+    LLine: String;                // Current line accumulating
   public
     class operator Initialize (out ADest: TTokenResponse);
     function AddToken(const aToken: String): TTokenPrintAction;
-    function Splitword(const AWord: String; var APrefix, ASuffix: String): Boolean;
     function LastWord: String;
-    procedure Finalize;
+    function Finalize: Boolean;
+
+  private
+    function HandleLineBreaks(const aToken: String): Boolean;
+    function SplitWord(const AWord: String; var APrefix, ASuffix: String): Boolean;
+
   end;
 
 // Info
@@ -215,8 +229,11 @@ var
   LStopSequenceStrings: array of AnsiString; // To keep the strings alive
   LStopSequenceCount: Integer;
   I: Integer;
+  LStopSequencesP: PPAnsiChar;
 begin
-  LStopSequenceCount := High(AStopSequences) + 1;
+  LStopSequenceCount := Length(AStopSequences);
+  if LStopSequenceCount = 0 then Inc(LStopSequenceCount);
+
   SetLength(LStopSequences, LStopSequenceCount);
   SetLength(LStopSequenceStrings, LStopSequenceCount); // Allocate space for the strings
 
@@ -226,7 +243,12 @@ begin
     LStopSequences[I] := PAnsiChar(LStopSequenceStrings[I]);  // Assign the pointer to the persistent string
   end;
 
-  Result := Dllama.Dllama_AddModel(PUTF8Char(UTF8Encode(AFilename)), PUTF8Char(UTF8Encode(AName)), AMaxContext, PUTF8Char(UTF8Encode(AChatMessageTemplate)), PUTF8Char(UTF8Encode(AChatMessageTemplateEnd)), @LStopSequences[0], LStopSequenceCount);
+  if LStopSequenceCount > 0 then
+    LStopSequencesP := @LStopSequences[0]
+  else
+    LStopSequencesP := nil;
+
+  Result := Dllama.Dllama_AddModel(PUTF8Char(UTF8Encode(AFilename)), PUTF8Char(UTF8Encode(AName)), AMaxContext, PUTF8Char(UTF8Encode(AChatMessageTemplate)), PUTF8Char(UTF8Encode(AChatMessageTemplateEnd)), LStopSequencesP, LStopSequenceCount);
 end;
 
 function  Dllama_SaveModelDb(const AFilename: string): Boolean;
@@ -296,35 +318,53 @@ class operator TTokenResponse.Initialize (out ADest: TTokenResponse);
 var
   LWidth: Integer;
 begin
+
+  // If stream output is sent to a destination without wordwrap,
+  // the TTokenResponse will find wordbreaks and split into lines by full words
+
+  // Define the lengh of the line in characters (fixed width fonts)
   Dllama_Console_GetSize(@LWidth, nil);
+  ADest.LineLengthMax := LWidth - 10;
 
-  ADest.LineLengthMax := LWidth - 0;
-
-  // These depend on the use case, what the AI is spewing out, here demo for natural language
-  SetLength(ADest.WordBreaks, 6);
+  // Stream is tabulated into full words based on these break characters
+  // !Syntax requires at least one!
+  SetLength(ADest.WordBreaks, 4);
   ADest.WordBreaks[0] := ' ';
   ADest.WordBreaks[1] := '-';
   ADest.WordBreaks[2] := ',';
   ADest.WordBreaks[3] := '.';
-  ADest.WordBreaks[4] := #13;
-  ADest.WordBreaks[5] := #10;
+
+
+  // Stream may contain forced line breaks
+  // !Syntax requires at least one!
+  SetLength(ADest.LineBreaks, 2);
+  ADest.LineBreaks[0] := #13;
+  ADest.LineBreaks[1] := #10;
+
 end;
 
 function TTokenResponse.AddToken(const aToken: String): TTokenPrintAction;
 var
   LPrefix, LSuffix: String;
 begin
-  // Always keep full response up to date, other tasks would need it
-  Raw := Raw + aToken;
+  // Keep full original response
+  Raw := Raw + aToken;                    // As continuous string
+  Setlength(Tokens, Length(Tokens)+1);    // Make space
+  Tokens[Length(Tokens)-1] := aToken;     // As an array
 
   // Accumulate "word"
   LWord := LWord + aToken;
 
+  // If stream contains linebreaks, print token out without added linebreaks
+  if HandleLineBreaks(aToken) then
+    exit(TTokenPrintAction.paAppend)
+
   // Check if a natural break exists, also split if word is longer than the allowed space
-  if SplitWord(LWord, LPrefix, LSuffix) then
+  // and print out token with or without linechange as needed
+  else if SplitWord(LWord, LPrefix, LSuffix) then
     begin
-      Setlength(Words, Length(Words)+1);      // Make space
-      Words[Length(Words)-1] := LPrefix;       // Add new word to array
+      Setlength(Words, Length(Words)+1);        // Make space
+      Words[Length(Words)-1] := LPrefix;        // Add new word to array
 
       LWord := LSuffix;                         // Keep the remainder of the split
 
@@ -334,25 +374,59 @@ begin
       if Length(LLine) + Length(LastWord) > LineLengthMax then
         begin
           Result  := TTokenPrintAction.paNewline;
-          LLine    := LastWord;                      // Reset Line (will be new line and then the word)
+          LLine   := LastWord;                  // Reset Line (will be new line and then the word)
         end
       else
         begin
           Result  := TTokenPrintAction.paAppend;
-          LLine    := LLine + LastWord;               // Append to the line
+          LLine   := LLine + LastWord;          // Append to the line
         end;
     end
   else
     begin
       Result := TTokenPrintAction.paWait;
     end;
+
 end;
 
-procedure TTokenResponse.Finalize;
+function TTokenResponse.HandleLineBreaks(const aToken: String): Boolean;
+var
+  LLetter, LLineBreak: Integer;
 begin
-  // Unsplit tail is still unprocessed, add it as the last word
-  Setlength(Words, Length(Words)+1);      // Make space
-  Words[Length(Words)-1] := LWord;       // Add new word to array
+  Result := false;
+
+  for LLetter := Length(aToken) downto 1 do                   // We are interested in the last possible linebreak
+    for LLineBReak := 0 to Length(Self.LineBreaks)-1 do       // Iterate linebreaks
+      if aToken[LLetter] = LineBreaks[LLineBreak] then        // If linebreak was found
+        begin
+          // Split into a word by last found linechange (do note the stored word may have more linebreak)
+          Setlength(Words, Length(Words)+1);                          // Make space
+          Words[Length(Words)-1] := LWord + LeftStr(aToken, Length(aToken)-LLetter); // Add new word to array
+
+          // In case aToken did not end after last LF
+          // Word and new line will have whatever was after the last linebreak
+          LWord := RightStr(aToken, Length(aToken)-LLetter);
+          LLine := LWord;
+
+          // No need to go further
+          exit(true);
+        end;
+
+end;
+
+function TTokenResponse.Finalize: Boolean;
+begin
+
+  // Buffer may contain something, if so make it into a word
+  if LWord <> ''  then
+    begin
+      Setlength(Words, Length(Words)+1);      // Make space
+      Words[Length(Words)-1] := LWord;        // Add new word to array
+      exit(true);
+    end
+  else
+    result := false;
+
 end;
 
 function TTokenResponse.LastWord: String;
@@ -360,7 +434,7 @@ begin
   Result := Words[Length(Words)-1];
 end;
 
-function TTokenResponse.Splitword(const AWord: String; var APrefix, ASuffix: String): Boolean;
+function TTokenResponse.SplitWord(const AWord: String; var APrefix, ASuffix: String): Boolean;
 var
   LLetter, LSeparator: Integer;
 begin
