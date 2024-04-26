@@ -292,9 +292,9 @@ begin
   Dllama_Console_PrintLn(LProject, [], CYAN);
   Dllama_Console_PrintLn('', [], WHITE);
 
-  //Test01();
+  Test01();
   //Test02();
-  Test03();
+  //Test03();
 
   Dllama_Console_Pause();
 end;

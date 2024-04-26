@@ -164,7 +164,7 @@ implementation
 
 {$IF CompilerVersion < 34.0} // Delphi 12 corresponds to version 34.0
 uses
-  System.Math;  dd
+  System.Math;
 {$IFEND}
 
 initialization
