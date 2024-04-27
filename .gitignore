@@ -78,7 +78,8 @@ bin/dump.bat
 bin/config.json
 !bin/Dllama.Deps.dll
 !bin/Dllama.dll
-!bin/Dllama.lib
+bin/Dllama.lib
+!lib/Dllama.lib
 src/deps/dllama/win64x
 bin/Dllama.pdb
 src/Dllama/Win64x
