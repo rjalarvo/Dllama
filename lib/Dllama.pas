@@ -104,6 +104,11 @@ const
   ROLE_ASSISTANT = 'assistant';
   ROLE_TOOL      = 'tool';
 
+  // Token Response
+  TOKENRESPONSE_WAIT    = 0;
+  TOKENRESPONSE_APPEND  = 1;
+  TOKENRESPONSE_NEWLINE = 2;
+
 type
   // Callbacks
   TDllama_LoadModelProgressCallback = function(const ASender: Pointer; const AModelName: PAnsiChar; const AProgress: Single): Boolean; cdecl;
@@ -150,6 +155,8 @@ function  Dllama_GetInferenceDoneCallback(): TDllama_InferenceDoneCallback; cdec
 procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama_InferenceDoneCallback); cdecl; external DLLAMA_DLL;
 function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean; cdecl; external DLLAMA_DLL;
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl; external DLLAMA_DLL;
+function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: PAnsiChar; const AUseGPU: Boolean; const AMaxTokens: UInt32; const AQuestion: PAnsiChar): PAnsiChar; cdecl; external DLLAMA_DLL;
+function  Dllama_IsInferenceActive(): Boolean; cdecl; external DLLAMA_DLL;
 
 // Console
 procedure Dllama_Console_GetSize(AWidth: PInteger; AHeight: PInteger); cdecl; external DLLAMA_DLL;
@@ -159,6 +166,12 @@ procedure Dllama_Console_SetTitle(const ATitle: PAnsiChar); cdecl; external DLLA
 procedure Dllama_Console_Pause(const AForcePause: Boolean; AColor: Word; const aMsg: PAnsiChar); cdecl; external DLLAMA_DLL;
 procedure Dllama_Console_Print(const AText: PAnsiChar; const AColor: Word); cdecl; external DLLAMA_DLL;
 procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word); cdecl; external DLLAMA_DLL;
+
+// TokenResponse
+procedure Dllama_TokenResponse_SetRightMargin(const AMargin: Integer); cdecl; external DLLAMA_DLL;
+function  Dllama_TokenResponse_AddToken(const AToken: PAnsiChar): Integer; cdecl; external DLLAMA_DLL;
+function  Dllama_TokenResponse_LastWord(): PAnsiChar; cdecl; external DLLAMA_DLL;
+function  Dllama_TokenResponse_Finalize(): Boolean; cdecl; external DLLAMA_DLL;
 
 implementation
 

@@ -71,46 +71,6 @@ uses
   System.StrUtils,
   Dllama;
 
-type
-
-  // AddToken return messages - for TResponse.AddToken
-  //  paWait = No new (full) words, just wait for more incoming tokens
-  //  Append = Append existing line with latest word
-  //  NewLine = start new line then print the latest word
-  TTokenPrintAction = (paWait, paAppend, paNewline);
-
-  { TResponse
-  Helper to handle incoming tokens during streaming
-    Example uses:
-    - Tabulate tokens into full words based on wordbreaks
-    - Control wordwrap/linechanges for console or custom GUI without wordwrap functionality
-      (Does change the print resolution from Token to logical words)
-
-
-  }
-  TTokenResponse = record
-  public
-    Raw: String;                  // Full response as is
-    Tokens: array of String;      // Actual tokens
-    LineLengthMax: Integer;       // Define confined space, in chars for fixed width font
-    WordBreaks: array of char;    // What is considered a logical word-break
-    LineBreaks: array of char;    // What is considered a logical line-break
-    Words: array of String;       // Response but as array of "words"
-  private
-    LWord: String;                // Current word accumulating
-    LLine: String;                // Current line accumulating
-  public
-    class operator Initialize (out ADest: TTokenResponse);
-    function AddToken(const aToken: String): TTokenPrintAction;
-    function LastWord: String;
-    function Finalize: Boolean;
-
-  private
-    function HandleLineBreaks(const aToken: String): Boolean;
-    function SplitWord(const AWord: String; var APrefix, ASuffix: String): Boolean;
-
-  end;
-
 // Info
 procedure Dllama_GetVersionInfo(AName, ACodeName, AMajorVersion, AMinorVersion, APatchVersion, AVersion, AProject: PString);
 
@@ -137,6 +97,8 @@ function  Dllama_GetLastUserMessage(): string;
 // Inference
 function  Dllama_Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=TEMPREATURE_BALANCED; const ASeed: UInt32=MaxInt): Boolean;
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);
+function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: string; const AUseGPU: Boolean; const AMaxTokens: UInt32; const AQuestion: string): string;
+
 
 // Console
 procedure Dllama_Console_SetTitle(const ATitle: string);
@@ -144,8 +106,10 @@ procedure Dllama_Console_Pause(const AForcePause: Boolean=False; AColor: Word=WH
 procedure Dllama_Console_Print(const AMsg: string; const AArgs: array of const; const AColor: Word);
 procedure Dllama_Console_PrintLn(const AMsg: string; const AArgs: array of const; const AColor: Word);
 
-var
-  TokenResponse: TTokenResponse;
+// TokenResponse
+function  Dllama_TokenResponse_AddToken(const AToken: string): Integer;
+function  Dllama_TokenResponse_LastWord(): string;
+
 
 implementation
 
@@ -197,7 +161,7 @@ begin
   Dllama.Dllama_GetConfig(@LModelPath, ANumGPULayers, ADisplayInfo, ACancelInferenceKey);
 
   if Assigned(AModelPath) then
-    AModelPath^ := string(LModelPath);
+    AModelPath^ := UTF8ToString(LModelPath);
 end;
 
 function  Dllama_SaveConfig(const AFilename: string): Boolean;
@@ -275,7 +239,7 @@ end;
 
 function  Dllama_GetLastUserMessage(): string;
 begin
-  Result := string(Dllama.Dllama_GetLastUserMessage());
+  Result := UTF8ToString(Dllama.Dllama_GetLastUserMessage());
 end;
 
 // Inference
@@ -284,12 +248,17 @@ var
   LResponse: PAnsiChar;
 begin
   Result := Dllama.Dllama_Inference(PUTF8Char(UTF8Encode(AModelName)), @LResponse, AMaxTokens, ATemperature, ASeed);
-  AResponse := string(LResponse);
+  AResponse := UTF8ToString(LResponse);
 end;
 
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);
 begin
   Dllama.Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed, AInputTokens, AOutputTokens, ATotalTokens);
+end;
+
+function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: string; const AUseGPU: Boolean; const AMaxTokens: UInt32; const AQuestion: string): string;
+begin
+  Result := UTF8ToString(Dllama.Dllama_Simple_Inference(PUTF8Char(UTF8Encode(AModelPath)), PUTF8Char(UTF8Encode(AModelsDb)), PUTF8Char(UTF8Encode(AModelName)), AUseGPU, AMaxTokens, PUTF8Char(UTF8Encode(AQuestion))));
 end;
 
 // Console
@@ -313,155 +282,15 @@ begin
   Dllama.Dllama_Console_PrintLn(PUTF8Char(UTF8Encode(Format(AMsg, AArgs))), AColor);
 end;
 
-{ TTokenResponse }
-class operator TTokenResponse.Initialize (out ADest: TTokenResponse);
-var
-  LWidth: Integer;
+// TokenResponse
+function  Dllama_TokenResponse_AddToken(const AToken: string): Integer;
 begin
-
-  // If stream output is sent to a destination without wordwrap,
-  // the TTokenResponse will find wordbreaks and split into lines by full words
-
-  // Define the lengh of the line in characters (fixed width fonts)
-  Dllama_Console_GetSize(@LWidth, nil);
-  ADest.LineLengthMax := LWidth - 10;
-
-  // Stream is tabulated into full words based on these break characters
-  // !Syntax requires at least one!
-  SetLength(ADest.WordBreaks, 4);
-  ADest.WordBreaks[0] := ' ';
-  ADest.WordBreaks[1] := '-';
-  ADest.WordBreaks[2] := ',';
-  ADest.WordBreaks[3] := '.';
-
-
-  // Stream may contain forced line breaks
-  // !Syntax requires at least one!
-  SetLength(ADest.LineBreaks, 2);
-  ADest.LineBreaks[0] := #13;
-  ADest.LineBreaks[1] := #10;
-
+  Result := Dllama.Dllama_TokenResponse_AddToken(PUTF8Char(UTF8Encode(AToken)));
 end;
 
-function TTokenResponse.AddToken(const aToken: String): TTokenPrintAction;
-var
-  LPrefix, LSuffix: String;
+function  Dllama_TokenResponse_LastWord(): string;
 begin
-  // Keep full original response
-  Raw := Raw + aToken;                    // As continuous string
-  Setlength(Tokens, Length(Tokens)+1);    // Make space
-  Tokens[Length(Tokens)-1] := aToken;     // As an array
-
-  // Accumulate "word"
-  LWord := LWord + aToken;
-
-  // If stream contains linebreaks, print token out without added linebreaks
-  if HandleLineBreaks(aToken) then
-    exit(TTokenPrintAction.paAppend)
-
-  // Check if a natural break exists, also split if word is longer than the allowed space
-  // and print out token with or without linechange as needed
-  else if SplitWord(LWord, LPrefix, LSuffix) then
-    begin
-      Setlength(Words, Length(Words)+1);        // Make space
-      Words[Length(Words)-1] := LPrefix;        // Add new word to array
-
-      LWord := LSuffix;                         // Keep the remainder of the split
-
-      // Word was split, so there is something that can be printed
-
-      // Need for a new line?
-      if Length(LLine) + Length(LastWord) > LineLengthMax then
-        begin
-          Result  := TTokenPrintAction.paNewline;
-          LLine   := LastWord;                  // Reset Line (will be new line and then the word)
-        end
-      else
-        begin
-          Result  := TTokenPrintAction.paAppend;
-          LLine   := LLine + LastWord;          // Append to the line
-        end;
-    end
-  else
-    begin
-      Result := TTokenPrintAction.paWait;
-    end;
-
-end;
-
-function TTokenResponse.HandleLineBreaks(const aToken: String): Boolean;
-var
-  LLetter, LLineBreak: Integer;
-begin
-  Result := false;
-
-  for LLetter := Length(aToken) downto 1 do                   // We are interested in the last possible linebreak
-    for LLineBReak := 0 to Length(Self.LineBreaks)-1 do       // Iterate linebreaks
-      if aToken[LLetter] = LineBreaks[LLineBreak] then        // If linebreak was found
-        begin
-          // Split into a word by last found linechange (do note the stored word may have more linebreak)
-          Setlength(Words, Length(Words)+1);                          // Make space
-          Words[Length(Words)-1] := LWord + LeftStr(aToken, Length(aToken)-LLetter); // Add new word to array
-
-          // In case aToken did not end after last LF
-          // Word and new line will have whatever was after the last linebreak
-          LWord := RightStr(aToken, Length(aToken)-LLetter);
-          LLine := LWord;
-
-          // No need to go further
-          exit(true);
-        end;
-
-end;
-
-function TTokenResponse.Finalize: Boolean;
-begin
-
-  // Buffer may contain something, if so make it into a word
-  if LWord <> ''  then
-    begin
-      Setlength(Words, Length(Words)+1);      // Make space
-      Words[Length(Words)-1] := LWord;        // Add new word to array
-      exit(true);
-    end
-  else
-    result := false;
-
-end;
-
-function TTokenResponse.LastWord: String;
-begin
-  Result := Words[Length(Words)-1];
-end;
-
-function TTokenResponse.SplitWord(const AWord: String; var APrefix, ASuffix: String): Boolean;
-var
-  LLetter, LSeparator: Integer;
-begin
-  Result := false;
-
-  for LLetter := 1 to Length(AWord) do               // Iterate whole word
-  begin
-    for LSeparator := 0 to Length(WordBreaks)-1 do   // Iterate all separating characters
-    begin
-      if AWord[LLetter] = WordBreaks[LSeparator] then // check for natural break
-      begin
-        // Let the world know there's stuff that can be a reason for a line change
-        Result := True;
-
-        APrefix := LeftStr(AWord, LLetter);
-        ASuffix := RightStr(AWord, Length(AWord)-LLetter);
-      end;
-    end;
-  end;
-
-  // Maybe the word is too long but there was no natural break, then cut it to LineLengthMax
-  if Length(AWord) > LineLengthMax then
-  begin
-    Result := True;
-    APrefix := LeftStr(AWord, LineLengthMax);
-    ASuffix := RightStr(AWord, Length(AWord)-LineLengthMax);
-  end;
+  Result := UTF8ToString(Dllama.Dllama_TokenResponse_LastWord);
 end;
 
 end.

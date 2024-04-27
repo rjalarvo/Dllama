@@ -197,6 +197,7 @@ type
     procedure SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback);
     function  Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=0.5; const ASeed: UInt32=MaxInt): Boolean;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
+    function  IsInferenceActive(): Boolean;
 
     // Callbacks
     procedure OnCError(const AText: string); virtual;
@@ -598,12 +599,15 @@ begin
         SetLength(LModelInfo.StopSequences, LStopSequencesJA.Count);
         for J := 0 to LStopSequencesJA.Count-1 do
         begin
-          LModelInfo.StopSequences[J] := LStopSequencesJA.Items[I].Value;
+          LModelInfo.StopSequences[J] := LStopSequencesJA.Items[J].Value;
         end;
       end;
 
-      AddModel(LModelInfo.Filename, LModelInfo.Name, LModelInfo.MaxContext, LModelInfo.ChatMessageTemplate, LModelInfo.AChatMessageTemplateEnd, LModelInfo.StopSequences);
+      if not AddModel(LModelInfo.Filename, LModelInfo.Name, LModelInfo.MaxContext, LModelInfo.ChatMessageTemplate, LModelInfo.AChatMessageTemplateEnd, LModelInfo.StopSequences) then
+        Exit;
     end;
+
+    Result := True;
 
   finally
     LJson.Free();
@@ -748,8 +752,6 @@ begin
   LMessage.Role := UTF8String(ARole);
   LMessage.Context := UTF8String(AMessage);
   FMessages.Add(LMessage);
-  //if SameText('user', ARole) then
-  //if ARole.Contains('user') then
   if Utils.ContainsText(ARole, 'user') then
     FLastUserMessage := AMessage;
 end;
@@ -857,6 +859,9 @@ var
 begin
   Result := False;
   AResponse := '';
+
+  if IsInferenceActive() then Exit;
+
   LFirstToken := True;
   LLastToken := '';
   FInferenceActive := True;
@@ -1044,6 +1049,11 @@ end;
 procedure TDllama.GetInferenceUsage(var AUsage: TDllama.Usage);
 begin
   AUsage := FUsage;
+end;
+
+function  TDllama.IsInferenceActive(): Boolean;
+begin
+  Result := FInferenceActive;
 end;
 
 procedure TDllama.OnCError(const AText: string);

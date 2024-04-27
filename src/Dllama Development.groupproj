@@ -6,6 +6,9 @@
         <Projects Include="Dllama\Dllama.cbproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="..\..\..\validate\Validate.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="..\examples\testbed\Testbed.dproj">
             <Dependencies/>
         </Projects>
@@ -26,6 +29,15 @@
     <Target Name="Dllama:Make">
         <MSBuild Projects="Dllama\Dllama.cbproj" Targets="Make"/>
     </Target>
+    <Target Name="Validate">
+        <MSBuild Projects="..\..\..\validate\Validate.dproj"/>
+    </Target>
+    <Target Name="Validate:Clean">
+        <MSBuild Projects="..\..\..\validate\Validate.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Validate:Make">
+        <MSBuild Projects="..\..\..\validate\Validate.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Testbed">
         <MSBuild Projects="..\examples\testbed\Testbed.dproj"/>
     </Target>
@@ -36,13 +48,13 @@
         <MSBuild Projects="..\examples\testbed\Testbed.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="Dllama;Testbed"/>
+        <CallTarget Targets="Dllama;Validate;Testbed"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Dllama:Clean;Testbed:Clean"/>
+        <CallTarget Targets="Dllama:Clean;Validate:Clean;Testbed:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Dllama:Make;Testbed:Make"/>
+        <CallTarget Targets="Dllama:Make;Validate:Make;Testbed:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

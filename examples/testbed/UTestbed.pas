@@ -100,37 +100,32 @@ end;
 procedure InferenceCallback(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
 begin
   // Handle new tokens
-  case TokenResponse.AddToken(UTF8ToString(AToken)) of
-
-    TTokenPrintAction.paWait:
+  case Dllama_TokenResponse_AddToken(UTF8ToString(AToken)) of
+    TOKENRESPONSE_WAIT:
+    begin
       // Do nothing, need more tokens
-      ;
+    end;
 
-    TTokenPrintAction.paAppend:
-      Dllama_Console_Print(TokenResponse.LastWord, [], WHITE);
+    TOKENRESPONSE_APPEND:
+    begin
+      Dllama_Console_Print(Dllama_TokenResponse_LastWord(), [], WHITE);
+    end;
 
-    TTokenPrintAction.paNewline:
-      begin
-        Dllama_Console_Print(CRLF+TokenResponse.LastWord, [], WHITE);
-      end;
+    TOKENRESPONSE_NEWLINE:
+    begin
+      Dllama_Console_Print(CRLF+ Dllama_TokenResponse_LastWord(), [], WHITE);
+    end;
   end;
 end;
 
 procedure InferenceDoneCallback(const ASender: Pointer); cdecl;
 begin
-
-  // Not sure if this works in the case when it is needed (it's rare I guess). Not sure how to test it.
-  if Dllama.Ext.TokenResponse.Finalize then       // Force potential leftovers into Word array.
-    begin
-      Dllama_Console_PrintLn(CRLF, [], BRIGHTYELLOW);
-      Dllama_Console_PrintLn('Finalize was used, last buffer was:' + Dllama.Ext.TokenResponse.LastWord, [], WHITE);
-      InferenceCallback(nil, '');                 // Handle last word
-    end
-  else
-    begin
-      Dllama_Console_PrintLn(CRLF, [], DARKGREEN);
-      Dllama_Console_PrintLn('Finalize was not needed.', [], BRIGHTYELLOW);
-    end;
+  // Force potential leftovers into Word array.
+  if Dllama_TokenResponse_Finalize() then
+  begin
+    // Handle last word
+    InferenceCallback(nil, '');
+  end
 end;
 
 procedure Test01();
@@ -284,6 +279,19 @@ begin
   Dllama_UnloadModel();
 end;
 
+procedure Test04();
+var
+  LResponse: string;
+  LModelName: string;
+begin
+  //LModelName := 'llama3';
+  //LModelName := 'wizardlm2';
+  LModelName := 'phi3';
+  LResponse :=  Dllama_Simple_Inference('C:\LLM\gguf', 'models.json', LModelName, True, 1024, 'Why is the sky blue?');
+
+  Dllama_Console_PrintLn(LResponse, [], WHITE);
+end;
+
 procedure RunTests();
 var
   LProject: string;
@@ -292,9 +300,10 @@ begin
   Dllama_Console_PrintLn(LProject, [], CYAN);
   Dllama_Console_PrintLn('', [], WHITE);
 
-  Test01();
+  //Test01();
   //Test02();
   //Test03();
+  Test04();
 
   Dllama_Console_Pause();
 end;

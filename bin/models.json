@@ -15,16 +15,6 @@
             ]
         },
         {
-            "Filename": "dolphin-2.8-mistral-7b-v02.Q6_K.gguf",
-            "Name": "dolphi-llama3-70b",
-            "MaxContext": 8192,
-            "ChatMessageTemplate": "<|im_start|>%s \\n %s<|im_end|>",
-            "AChatMessageTemplateEnd": "",
-            "StopSequences": [
-                "<|user|>"
-            ]
-        },
-        {
             "Filename": "Meta-Llama-3-8B-Instruct-Q6_K.gguf",
             "Name": "llama3",
             "MaxContext": 8192,

@@ -70,6 +70,7 @@ interface
 
 uses
   System.SysUtils,
+  System.IOUtils,
   Dllama.Deps,
   Dllama.Deps.Ext,
   Dllama.Utils,
@@ -116,7 +117,9 @@ procedure Dllama_SetInferenceCallback(const ASender: Pointer; const AHandler: TD
 function  Dllama_GetInferenceDoneCallback(): TDllama.InferenceDoneCallback; cdecl; exports Dllama_GetInferenceDoneCallback;
 procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback); cdecl; exports Dllama_SetInferenceDoneCallback;
 function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean; cdecl; exports Dllama_Inference;
-procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl; exports Dllama_GetInferenceUsage;
+procedure Dllama_GetInferenceUsage(ATokenInputSpeed, ATokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl; exports Dllama_GetInferenceUsage;
+function  Dllama_IsInferenceActive(): Boolean; cdecl; exports Dllama_IsInferenceActive;
+function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: PAnsiChar; const AUseGPU: Boolean; const AMaxTokens: UInt32; const AQuestion: PAnsiChar): PAnsiChar; cdecl; exports Dllama_Simple_Inference;
 
 // Console
 procedure Dllama_Console_GetSize(AWidth: PInteger; AHeight: PInteger); cdecl; exports Dllama_Console_GetSize;
@@ -127,10 +130,19 @@ procedure Dllama_Console_Pause(const AForcePause: Boolean; AColor: Word; const a
 procedure Dllama_Console_Print(const AText: PAnsiChar; const AColor: Word); cdecl; exports Dllama_Console_Print;
 procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word); cdecl; exports Dllama_Console_PrintLn;
 
+// TokenResponse
+procedure Dllama_TokenResponse_SetRightMargin(const AMargin: Integer); cdecl; exports Dllama_TokenResponse_SetRightMargin;
+function  Dllama_TokenResponse_AddToken(const aToken: PAnsiChar): Integer; cdecl; exports Dllama_TokenResponse_AddToken;
+function  Dllama_TokenResponse_LastWord(): PAnsiChar; cdecl; exports Dllama_TokenResponse_LastWord;
+function  Dllama_TokenResponse_Finalize(): Boolean; cdecl; exports Dllama_TokenResponse_Finalize;
+
+
+
 implementation
 
 var
   LDllama: TDllama = nil;
+  LTokenResponse: TTokenResponse;
 
 procedure CheckDllama();
 begin
@@ -409,7 +421,7 @@ begin
     AResponse^ := Utils.AsUTF8(LResponse);
 end;
 
-procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);
+procedure Dllama_GetInferenceUsage(ATokenInputSpeed, ATokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);
 var
   LUsage: TDllama.Usage;
 begin
@@ -420,8 +432,8 @@ begin
   if Assigned(ATokenInputSpeed) then
     ATokenInputSpeed^ := LUsage.TokenInputSpeed;
 
-  if Assigned(TokenOutputSpeed) then
-    TokenOutputSpeed^ := LUsage.TokenOutputSpeed;
+  if Assigned(ATokenOutputSpeed) then
+    ATokenOutputSpeed^ := LUsage.TokenOutputSpeed;
 
   if Assigned(AInputTokens) then
     AInputTokens^ := LUsage.InputTokens;
@@ -431,7 +443,98 @@ begin
 
   if Assigned(ATotalTokens) then
     ATotalTokens^ := LUsage.TotalTokens;
+end;
 
+function  Dllama_IsInferenceActive(): Boolean;
+begin
+  Result := False;
+  if not Assigned(LDllama) then Exit;
+  Result := LDllama.IsInferenceActive();
+end;
+
+
+function Dllama_Simple_LoadModelProgressCallback(const ASender: Pointer; const AModelName: PAnsiChar; const AProgress: Single): Boolean; cdecl;
+begin
+  Result := True;
+end;
+
+procedure Dllama_Simple_InferenceCallback(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
+begin
+end;
+
+function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: PAnsiChar; const AUseGPU: Boolean; const AMaxTokens: UInt32; const AQuestion: PAnsiChar): PAnsiChar;
+var
+  LModelPath: string;
+  LModelsDb: string;
+  LQuestion: string;
+  LModelName: string;
+  LResponse: string;
+  LNumGPULayers: Integer;
+begin
+  Result := nil;
+  if LDllama.IsInferenceActive() then Exit;
+
+  LQuestion := UTF8ToString(AQuestion);
+  if LQuestion.IsEmpty then
+  begin
+    Result := 'Question can not be blank.';
+    Exit;
+  end;
+
+  LModelName := UTF8ToString(AModelName);
+  if LQuestion.IsEmpty then
+  begin
+    Result := 'ModelName can not be blank.';
+    Exit;
+  end;
+
+  LModelPath := UTF8ToString(AModelPath);
+  if not TDirectory.Exists(LModelPath) then
+  begin
+    Result := Utils.AsUTF8(Format('Models path was not found: "%s" ', [LModelPath]));
+    Exit;
+  end;
+
+  LModelsDb := TPath.ChangeExtension(UTF8ToString(AModelsDb), 'json');
+  if not TFile.Exists(LModelsDb) then
+  begin
+    Result := Utils.AsUTF8(Format('Models database file was not found: "%s" ', [LModelsDb]));
+    Exit;
+  end;
+
+  if AUseGPU then
+    LNumGPULayers := -1
+  else
+    LNumGPULayers := 0;
+  LDllama.InitConfig(LModelPath, LNumGPULayers, False, 27);
+
+
+  LModelsDb := UTF8ToString(AModelsDb);
+  if not LDllama.LoadModelDb(LModelsDb) then
+  begin
+    Result := Utils.AsUTF8(LDllama.GetError());
+    Exit;
+  end;
+
+  LDllama.SetLoadModelProgressCallback(nil, Dllama_Simple_LoadModelProgressCallback);
+  LDllama.SetInferenceCallback(nil, Dllama_Simple_InferenceCallback);
+
+  LDllama.AddMessage('user', LQuestion);
+
+  if LDllama.Inference(LModelName, LResponse) then
+    begin
+      Result := Utils.AsUTF8(LResponse);
+    end
+  else
+    begin
+      Result := Utils.AsUTF8(Format('Error: %s', [LDllama.GetError()]));
+    end;
+
+  // unload model
+  LDllama.UnloadModel();
+
+  LDllama.SetInferenceCallback(nil, nil);
+  LDllama.SetLoadModelProgressCallback(nil, nil);
 end;
 
 // Console
@@ -469,6 +572,28 @@ procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word);
 begin
   Console.PrintLn(UTF8ToUnicodeString(AText), AColor);
 end;
+
+// TokenResponse
+procedure Dllama_TokenResponse_SetRightMargin(const AMargin: Integer);
+begin
+  LTokenResponse.SetRightMargin(AMargin);
+end;
+
+function  Dllama_TokenResponse_AddToken(const AToken: PAnsiChar): Integer;
+begin
+  Result := Ord(LTokenResponse.AddToken(UTF8ToUnicodeString(AToken)));
+end;
+
+function  Dllama_TokenResponse_LastWord(): PAnsiChar;
+begin
+  Result := Utils.AsUTF8(LTokenResponse.LastWord());
+end;
+
+function  Dllama_TokenResponse_Finalize: Boolean;
+begin
+  Result := LTokenResponse.Finalize();
+end;
+
 
 
 initialization
