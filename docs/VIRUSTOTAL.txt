@@ -1,0 +1,13 @@
+>>>> VirusTotal Reports <<<<
+=============================================================================
+This file contains links to VirusTotal reports for each executable included
+in this repository. VirusTotal is a free service that analyzes files and URLs
+for viruses, worms, trojans, and other kinds of malicious content detected by
+antivirus engines and website scanners. Each link corresponds to a detailed
+report for the respective file, providing insights into its safety and
+integrity. By including these reports, we aim to ensure transparency and
+foster trust by confirming that all executables have been scanned for
+potential security threats and are safe for use.
+=============================================================================
+
+Dllama.dll - https://www.virustotal.com/gui/file/2e9b6d01dad82757ddbe0b1086791b4f405622bfdf382d158715da11cedb660d?nocache=1

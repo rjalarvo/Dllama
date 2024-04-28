@@ -113,7 +113,7 @@ begin
 
     TOKENRESPONSE_NEWLINE:
     begin
-      Dllama_Console_Print(CRLF+ Dllama_TokenResponse_LastWord(), [], WHITE);
+      Dllama_Console_Print(CRLF+Dllama_TokenResponse_LastWord().TrimLeft(), [], WHITE);
     end;
   end;
 end;
@@ -128,6 +128,13 @@ begin
   end
 end;
 
+procedure AddModels();
+begin
+  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K.gguf', 'llama3:8B:Q6', 1024*8, '<|start_header_id|>%s<|end_header_id|>\n %s<|eot_id|>', '<|start_header_id|>assistant<|end_header_id|>', ['<|eot_id|>', '<|start_header_id|>', '<|end_header_id|>', 'assistant']);
+  Dllama_AddModel('Phi-3-mini-4k-instruct-q4.gguf', 'phi3:4B:Q4', 1024*4, '<|%s|>\n %s<|end|>\n', '<|assistant|>\n', ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']);
+  Dllama_SaveModelDb('models.json');
+end;
+
 procedure Test01();
 var
   LResponse: string;
@@ -139,14 +146,9 @@ var
 begin
   // init config
   Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
-  Dllama_SaveConfig('config.json');
 
   // add models
-  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
-  Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
-  Dllama_AddModel('Phi-3-mini-4k-instruct-q4.gguf', 'phi3', 1024*4, '%s %s<|end|>', '<|assistant|>', ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']);
-  Dllama_AddModel('dolphin-2.8-mistral-7b-v02.Q6_K.gguf', 'dolphi-llama3-70b', 1024*8, '<|im_start|>%s \n %s<|im_end|>', '', []);
-  Dllama_SaveModelDb('models.json');
+  AddModels();
 
   // init callbacks
   Dllama_SetInferenceCallback(nil, InferenceCallback);
@@ -155,14 +157,19 @@ begin
   Dllama_SetLoadModelCallback(nil, LoadModelCallback);
 
   // add messages
-  Dllama_AddMessage('<|system|>', 'you are Dllama, a helpful AI assistant.');
-  Dllama_AddMessage('<|user|>', 'What is KNO3?');
+  Dllama_AddMessage(ROLE_SYSTEM, 'You are Dllama, a helpful AI assistant, created in 2024 by tinyBigGAMES LLC.');
+  //Dllama_AddMessage(ROLE_USER, 'Who are you?');
+  //Dllama_AddMessage(ROLE_USER, 'What is KNO3?');
+  //Dllama_AddMessage(ROLE_USER, 'Who is Bill Gates?');
+  Dllama_AddMessage(ROLE_USER, 'Почему трава зеленая?'); //Why grass is green?
+  //Dllama_AddMessage(ROLE_USER, 'Почему небо синее?');    //Why the sky is blue?
+  //Dllama_AddMessage(ROLE_USER, 'Почему снег холодный?'); //Why snow is cold?
 
   // display user prompt
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('phi3', LResponse) then
+  if Dllama_Inference('phi3:4B:Q4', LResponse) then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -190,13 +197,9 @@ var
 begin
   // init config
   Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
-  Dllama_SaveConfig('config.json');
 
   // add models
-  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
-  Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
-  Dllama_AddModel('Phi-3-mini-4k-instruct-q4.gguf', 'phi3', 1024*4, '%s %s<|end|>', '<|assistant|>', ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']);
-  Dllama_SaveModelDb('models.json');
+  AddModels();
 
   // init callbacks
   Dllama_SetInferenceCallback(nil, InferenceCallback);
@@ -205,14 +208,14 @@ begin
   Dllama_SetLoadModelCallback(nil, LoadModelCallback);
 
   // add messages
-  Dllama_AddMessage(ROLE_SYSTEM, 'your an export AI assistant in language translation.');
-  Dllama_AddMessage(ROLE_USER, 'Translate to Chinese, Japanese, Spanish and Italian: Hello, how are you?');
+  Dllama_AddMessage(ROLE_SYSTEM, 'Your an export AI assistant in language translation.');
+  Dllama_AddMessage(ROLE_USER, 'Translate toJapanese, Spanish and Italian: Hello, how are you?');
 
   // display user prompt
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('wizardlm2', LResponse) then
+  if Dllama_Inference('phi3:4B:Q4', LResponse) then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -240,13 +243,9 @@ var
 begin
   // init config
   Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
-  Dllama_SaveConfig('config.json');
 
   // add models
-  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>', '\n assistant:\n', ['<|eot_id|>', 'assistant']);
-  Dllama_AddModel('WizardLM-2-7B.Q6_K.gguf', 'wizardlm2', 1024*8, 'USER:%s ASSISTANT%s', '', ['USER', 'ASSISTANT']);
-  Dllama_AddModel('Phi-3-mini-4k-instruct-q4.gguf', 'phi3', 1024*4, '%s %s<|end|>', '<|assistant|>', ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']);
-  Dllama_SaveModelDb('models.json');
+  AddModels();
 
   // init callbacks
   Dllama_SetInferenceCallback(nil, InferenceCallback);
@@ -255,14 +254,14 @@ begin
   Dllama_SetLoadModelCallback(nil, LoadModelCallback);
 
   // add messages
-  Dllama_AddMessage(ROLE_SYSTEM, 'you are Dllama, a helpful AI assistant.');
+  Dllama_AddMessage(ROLE_SYSTEM, 'You are Dllama, a helpful AI assistant, created in 2024 by tinyBigGAMES LLC.');
   Dllama_AddMessage(ROLE_USER, 'Write a short story about an AI that become sentient.');
 
   // display user prompt
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('llama3', LResponse) then
+  if Dllama_Inference('llama3:8B:Q6', LResponse) then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -284,10 +283,9 @@ var
   LResponse: string;
   LModelName: string;
 begin
-  //LModelName := 'llama3';
-  //LModelName := 'wizardlm2';
-  LModelName := 'phi3';
-  LResponse :=  Dllama_Simple_Inference('C:\LLM\gguf', 'models.json', LModelName, True, 1024, 'Why is the sky blue?');
+  //LModelName := 'llama3:8B:Q6';
+  LModelName := 'phi3:4B:Q4';
+  LResponse :=  Dllama_Simple_Inference(CModelPath, 'models.json', LModelName, True, 1024, 27, 'Why is the sky blue?');
 
   Dllama_Console_PrintLn(LResponse, [], WHITE);
 end;
@@ -300,10 +298,10 @@ begin
   Dllama_Console_PrintLn(LProject, [], CYAN);
   Dllama_Console_PrintLn('', [], WHITE);
 
-  //Test01();
+  Test01();
   //Test02();
   //Test03();
-  Test04();
+  //Test04();
 
   Dllama_Console_Pause();
 end;

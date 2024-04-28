@@ -545,6 +545,7 @@ const
   LLAMA_KV_OVERRIDE_TYPE_INT = 0;
   LLAMA_KV_OVERRIDE_TYPE_FLOAT = 1;
   LLAMA_KV_OVERRIDE_TYPE_BOOL = 2;
+  LLAMA_KV_OVERRIDE_TYPE_STR = 3;
 
 type
   llama_gretype = Integer;
@@ -905,14 +906,15 @@ type
   P_anonymous_type_5 = ^_anonymous_type_5;
   _anonymous_type_5 = record
     case Integer of
-      0: (int_value: Int64);
-      1: (float_value: Double);
-      2: (bool_value: Boolean);
+      0: (val_i64: Int64);
+      1: (val_f64: Double);
+      2: (val_bool: Boolean);
+      3: (val_str: array [0..127] of UTF8Char);
   end;
 
   llama_model_kv_override = record
-    key: array [0..127] of UTF8Char;
     tag: llama_model_kv_override_type;
+    key: array [0..127] of UTF8Char;
     f3: _anonymous_type_5;
   end;
 
@@ -927,6 +929,7 @@ type
     vocab_only: Boolean;
     use_mmap: Boolean;
     use_mlock: Boolean;
+    check_tensors: Boolean;
   end;
 
   llama_context_params = record
@@ -967,6 +970,7 @@ type
     quantize_output_tensor: Boolean;
     only_copy: Boolean;
     pure: Boolean;
+    keep_split: Boolean;
     imatrix: Pointer;
     kv_overrides: Pointer;
   end;
@@ -1157,6 +1161,9 @@ function ggml_are_same_shape(const t0: Pggml_tensor; const t1: Pggml_tensor): Bo
 
 function ggml_tensor_overhead(): NativeUInt; cdecl;
   external DLLAMA_DLL name _PU + 'ggml_tensor_overhead';
+
+function ggml_validate_row_data(&type: ggml_type; const data: Pointer; nbytes: NativeUInt): Boolean; cdecl;
+  external DLLAMA_DLL name _PU + 'ggml_validate_row_data';
 
 function ggml_init(params: ggml_init_params): Pggml_context; cdecl;
   external DLLAMA_DLL name _PU + 'ggml_init';
@@ -2411,6 +2418,9 @@ function llama_n_ubatch(const ctx: Pllama_context): UInt32; cdecl;
 
 function llama_n_seq_max(const ctx: Pllama_context): UInt32; cdecl;
   external DLLAMA_DLL name _PU + 'llama_n_seq_max';
+
+function llama_pooling_type_rtn(const ctx: Pllama_context): llama_pooling_type; cdecl;
+  external DLLAMA_DLL name _PU + 'llama_pooling_type';
 
 function llama_vocab_type_rtn(const model: Pllama_model): llama_vocab_type; cdecl;
   external DLLAMA_DLL name _PU + 'llama_vocab_type';

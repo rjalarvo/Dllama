@@ -2,10 +2,10 @@
     "Models": [
         {
             "Filename": "Phi-3-mini-4k-instruct-q4.gguf",
-            "Name": "phi3",
+            "Name": "phi3:4B:Q4",
             "MaxContext": 4096,
-            "ChatMessageTemplate": "%s %s<|end|>",
-            "AChatMessageTemplateEnd": "<|assistant|>",
+            "ChatMessageTemplate": "<|%s|>\\n %s<|end|>\\n",
+            "AChatMessageTemplateEnd": "<|assistant|>\\n",
             "StopSequences": [
                 "<|user|>",
                 "<|assistant|>",
@@ -16,24 +16,15 @@
         },
         {
             "Filename": "Meta-Llama-3-8B-Instruct-Q6_K.gguf",
-            "Name": "llama3",
+            "Name": "llama3:8B:Q6",
             "MaxContext": 8192,
-            "ChatMessageTemplate": "<|start_header_id|>%s %s<|end_header_id|>",
-            "AChatMessageTemplateEnd": "\\n assistant:\\n",
+            "ChatMessageTemplate": "<|start_header_id|>%s<|end_header_id|>\\n %s<|eot_id|>",
+            "AChatMessageTemplateEnd": "<|start_header_id|>assistant<|end_header_id|>",
             "StopSequences": [
                 "<|eot_id|>",
+                "<|start_header_id|>",
+                "<|end_header_id|>",
                 "assistant"
-            ]
-        },
-        {
-            "Filename": "WizardLM-2-7B.Q6_K.gguf",
-            "Name": "wizardlm2",
-            "MaxContext": 8192,
-            "ChatMessageTemplate": "USER:%s ASSISTANT%s",
-            "AChatMessageTemplateEnd": "",
-            "StopSequences": [
-                "USER",
-                "ASSISTANT"
             ]
         }
     ]

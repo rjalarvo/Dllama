@@ -126,9 +126,9 @@ DLLAMA_API void Dllama_ClearMessages()
 	Dllama::Export::Dllama_ClearMessages();
 }
 
-DLLAMA_API void Dllama_AddMessage(const char * ARole, const char * AMessage)
+DLLAMA_API void Dllama_AddMessage(const char * ARole, const char * ACentent)
 {
-	Dllama::Export::Dllama_AddMessage(ARole, AMessage);
+	Dllama::Export::Dllama_AddMessage(ARole, ACentent);
 }
 
 DLLAMA_API char* Dllama_GetLastUserMessage()
@@ -162,9 +162,9 @@ DLLAMA_API bool Dllama_Inference(const char * AModelName, System::PPAnsiChar ARe
 	return Dllama::Export::Dllama_Inference(AModelName, AResponse, AMaxTokens, ATemperature, ASeed);
 }
 
-DLLAMA_API char * Dllama_Simple_Inference(const char * AModelPath, const char * AModelsDb, const char * AModelName, const bool AUseGPU, const System::UInt32 AMaxTokens, const char * AQuestion)
+DLLAMA_API char * Dllama_Simple_Inference(const char * AModelPath, const char * AModelsDb, const char * AModelName, const bool AUseGPU, const System::UInt32 AMaxTokens, const System::Byte ACancelInferenceKey, const char * AQuestion)
 {
-    return Dllama::Export::Dllama_Simple_Inference(AModelPath, AModelsDb, AModelName, AUseGPU, AMaxTokens, AQuestion);
+    return Dllama::Export::Dllama_Simple_Inference(AModelPath, AModelsDb, AModelName, AUseGPU, AMaxTokens, ACancelInferenceKey, AQuestion);
 }
 
 DLLAMA_API bool Dllama_IsInferenceActive()

@@ -4,7 +4,7 @@
         <ProjectVersion>20.1</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Distro</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win64x</Platform>
         <ProjectName Condition="'$(ProjectName)'==''">Dllama</ProjectName>
         <TargetedPlatforms>1048576</TargetedPlatforms>
@@ -174,10 +174,11 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <VerInfo_DLL>true</VerInfo_DLL>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_4_Win64x)'!=''">
+        <ILINK_AdditionalOptions>--gc-sections --strip-all</ILINK_AdditionalOptions>
         <PostBuildEvent><![CDATA[compress-dllama.cmd
 $(PostBuildEvent)]]></PostBuildEvent>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_4_Win64x)'!=''">
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_DLL>true</VerInfo_DLL>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -1251,7 +1252,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy /V /Y &quot;..\..\bin\Dllama.lib&quot; &quot;..\..\lib\Dllama.lib&quot;</PostBuildEvent>
+        <PostBuildEvent>compress-dllama.cmd&amp;&amp;copy /V /Y &quot;..\..\bin\Dllama.lib&quot; &quot;..\..\lib\Dllama.lib&quot;</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Distro' And '$(Platform)'=='Win64x'">

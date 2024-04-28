@@ -84,3 +84,4 @@ src/deps/dllama/win64x
 bin/Dllama.pdb
 src/Dllama/Win64x
 src/Dllama/Dllama.@@@
+bin/view.txt

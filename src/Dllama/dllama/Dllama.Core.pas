@@ -128,8 +128,8 @@ type
     end;
 
     TChatMessage = record
-      Role: UTF8String;
-      Context: UTF8String;
+      Role: string;
+      Context: string;
     end;
 
     TModels = TDictionary<string, TDllama.Model>;
@@ -187,7 +187,7 @@ type
 
     // messages
     procedure ClearMessages();
-    procedure AddMessage(const ARole, AMessage: string);
+    procedure AddMessage(const ARole, AContent: string);
     function  GetLastUserMessage(): string;
 
     // inference
@@ -533,11 +533,13 @@ begin
   Result := False;
 
   LFilename := TPath.ChangeExtension(AFilename, 'json');
+  (*
   if not TFile.Exists(LFilename) then
   begin
     SetError('[TDllama.LoadModelDb] Filename was not found: "%s"', [LFilename]);
     Exit;
   end;
+  *)
 
   LJson := TJsonObject.Parse(TFile.ReadAllText(LFilename, TEncoding.UTF8));
   try
@@ -693,6 +695,14 @@ begin
     end;
 
     Result := True;
+
+    (*
+    if llama_model_meta_val_str(FModel, 'tokenizer.chat_template', PAnsiChar(Utils.GetTempStaticBuffer()), Utils.GetTempStaticBufferSize()) < 0 then
+      writeln('template: unknown')
+    else
+      writeln('template: ', PAnsiChar(Utils.GetTempStaticBuffer()));
+    *)
+
   finally
     OnLoadModel(Result);
   end;
@@ -742,18 +752,23 @@ begin
   FMessages.Clear();
 end;
 
-procedure TDllama.AddMessage(const ARole, AMessage: string);
+procedure TDllama.AddMessage(const ARole, AContent: string);
 var
   LMessage: TChatMessage;
+  LRole: string;
+  LContent: string;
 begin
-  if AMessage.IsEmpty then Exit;
-  if ARole.IsEmpty then Exit;
+  LRole := ARole.Trim();
+  LContent := AContent.Trim();
 
-  LMessage.Role := UTF8String(ARole);
-  LMessage.Context := UTF8String(AMessage);
+  if LContent.IsEmpty then Exit;
+  if LRole.IsEmpty then Exit;
+
+  LMessage.Role := LRole;
+  LMessage.Context := LContent;
   FMessages.Add(LMessage);
   if Utils.ContainsText(ARole, 'user') then
-    FLastUserMessage := AMessage;
+    FLastUserMessage := AContent;
 end;
 
 function  TDllama.GetLastUserMessage(): string;
@@ -784,6 +799,42 @@ begin
   FInferenceDoneCallback.Handler := AHandler;
 end;
 
+function IsPartEndsWith(const MainStr: string; const AStopTokens: TArray<string>): Boolean;
+var
+  i: Integer;
+  LStopToken: string;
+begin
+  Result := False;
+
+  for LStopToken in AStopTokens do
+  begin
+    for i := 0 to Length(LStopToken)-1 do
+    begin
+      if MainStr.EndsWith(LStopToken.Substring(0, i+1)) then
+      begin
+        Result := True;
+        Break;
+      end;
+    end;
+  end;
+end;
+
+function IsAStopToken(const AText: string; const AStopTokens: TArray<string>): Boolean;
+var
+  LStopToken: string;
+begin
+  Result := False;
+
+  for LStopToken in AStopTokens do
+  begin
+    if AText.EndsWith(LStopToken) then
+    begin
+      Exit(True);
+    end;
+  end;
+end;
+
+
 function  TDllama.Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
 var
   LAddBos: Boolean;
@@ -799,49 +850,15 @@ var
   LCandidatesP: llama_token_data_array;
   LNewTokenId: llama_token;
   LToken: string;
+  LPrevToken: string;
   LNBatch: Int32;
   LTokenData: llama_token_data;
   LTimings: llama_timings;
   LFirstToken: Boolean;
   LPrompt: string;
   LTemperature: Single;
-  LLastToken: string;
   LSkip: Boolean;
-
-  function IsPartEndsWith(const MainStr: string; const AStopTokens: TArray<string>): Boolean;
-  var
-    i: Integer;
-    LStopToken: string;
-  begin
-    Result := False;
-
-    for LStopToken in AStopTokens do
-    begin
-      for i := 0 to Length(LStopToken)-1 do
-      begin
-        if MainStr.EndsWith(LStopToken.Substring(0, i+1)) then
-        begin
-          Result := True;
-          Break;
-        end;
-      end;
-    end;
-  end;
-
-  function IsAStopToken(const AText: string; const AStopTokens: TArray<string>): Boolean;
-  var
-    LStopToken: string;
-  begin
-    Result := False;
-
-    for LStopToken in AStopTokens do
-    begin
-      if AText.EndsWith(LStopToken) then
-      begin
-        Exit(True);
-      end;
-    end;
-  end;
+  LBuffer: string;
 
   function BuildPrompt(): string;
   var
@@ -863,7 +880,8 @@ begin
   if IsInferenceActive() then Exit;
 
   LFirstToken := True;
-  LLastToken := '';
+  LBuffer := '';
+  LPrevToken := '';
   FInferenceActive := True;
   try
 
@@ -982,33 +1000,38 @@ begin
           // sanitize token
           LToken := Utils.SanitizeFromJson(LToken);
 
-          if LToken.EndsWith('\', True) then
-            begin
-              LLastToken := LToken;
-            end
-          else
-            begin
-              if (LLastToken.EndsWith('\', True)) then
-              if (LToken = 'n') or (LToken = 'r') or (LToken = 'b') or (LToken = 't') or
-                 (LToken = 'f') or (LToken = '/') or (LToken = '"') or (LToken = '\') then
-              begin
-                LToken := LLastToken + LToken;
-                LToken := Utils.SanitizeFromJson(LToken);
-                LLastToken := '';
-              end;
+          // build up token buffer
+          LBuffer := LBuffer + LToken;
 
-              if not IsPartEndsWith(AResponse + LToken, FLoadedModel.StopSequences) then
-                begin
-                  AResponse := AResponse + LToken;
-                  OnInference(LToken);
-                  //write(LToken);
-                end
-              else
-                begin
-                  if IsAStopToken(AResponse + LToken, FLoadedModel.StopSequences) then
-                    Break;
-                end;
-            end;
+          // check for and process specal chars
+          LSkip := False;
+          if IsPartEndsWith(LBuffer, ['\n', '\r', '\b', '\t', '\f']) then
+          begin
+            LPrevToken := LPrevToken + LToken;
+            if IsAStopToken(LBuffer, ['\n', '\r', '\b', '\t', '\f']) then
+              begin
+                LToken := LPrevToken;
+                LToken := Utils.SanitizeFromJson(LToken);
+                LPrevToken := '';
+              end
+            else
+              LSkip := True;
+          end;
+
+          // check for stop sequences
+          if not LSkip then
+          begin
+            if not IsPartEndsWith(LBuffer, FLoadedModel.StopSequences) then
+              begin
+                AResponse := AResponse + LToken;
+                OnInference(LToken);
+              end
+            else
+              begin
+                if IsAStopToken(LBuffer, FLoadedModel.StopSequences) then
+                  Break;
+              end;
+          end;
         end;
 
         llama_batch_clear(LBatch);
