@@ -22,7 +22,7 @@ A simple and easy to use library for doing local LLM inference directly from <a 
 - If this project is useful to you, consider starring the repo, sponsoring it, spreading the word, etc. Any help is greatly welcomed and appreciated.
 
 ### Examples  
-A query example:
+Delphi example:
 ```Delphi  
 uses
   System.SysUtils,
@@ -68,6 +68,45 @@ begin
     end;
   Dllama_UnloadModel();
 end.
+```  
+CPP Example  
+```CPP  
+#include <iostream>
+#include <Dllama.h>
+
+int main()
+{
+    // init config
+    Dllama_InitConfig("C:\\LLM\\gguf", -1, true, 27);
+
+    // load model database
+    if (!Dllama_LoadModelDb("models.json"))
+    {
+        // display error
+        std::cout << "Error: " << Dllama_GetError() << "\n";
+        return 1;
+    }
+    
+    // add message
+    Dllama_AddMessage(ROLE_USER, "who is bill gates?");
+    
+    char** response = nullptr;
+    if (Dllama_Inference("phi3:4B:Q4", response, 1024, 0.5, 1111))
+    {
+        // success - do something with response
+    }
+    else
+    {
+        // display error
+        std::cout << "Error: " << Dllama_GetError() <<"\n";
+        return 1;
+    };
+    
+    // pause
+    Dllama_Console_Pause(true, WHITE, "");
+
+    return 0;
+}
 ```
 ### Media
 
