@@ -27,7 +27,7 @@
 | |) || || |/ _` || '  \ / _` |
 |___/ |_||_|\__,_||_|_|_|\__,_|
 
-    LLM inference in Delphi
+  Local LLM Inference Library
 
 Copyright © 2024-present tinyBigGAMES™ LLC
          All Rights Reserved.

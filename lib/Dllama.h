@@ -27,7 +27,7 @@
 | |) || || |/ _` || '  \ / _` |
 |___/ |_||_|\__,_||_|_|_|\__,_|
 
-    LLM inference in Delphi
+  Local LLM Inference Library
 
 Copyright © 2024-present tinyBigGAMES™ LLC
          All Rights Reserved.
@@ -72,7 +72,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 #include <stdint.h>
 
-#define DLLAMA_API extern "C" __declspec(dllexport)
+#define DLLAMA_API extern "C" __declspec(dllimport)
 
 // Dllama DLL
 #define DLLAMA_DLL "Dllama.dll"
@@ -142,7 +142,6 @@ DLLAMA_API void Dllama_GetVersionInfo(const char** AName,
  * \param ANumGPULayers       - number of GPU layer (-1 for max, 0 for CPU only)
  * \param ADisplayInfo        - display information to console
  * \param ACancelInferenceKey - key that will cancel inference (ie ESC(27))
-
  **/
 DLLAMA_API void Dllama_InitConfig(const char * AModelPath,
   const int ANumGPULayers, const bool ADisplayInfo,
@@ -177,7 +176,7 @@ DLLAMA_API bool Dllama_SaveConfig(const char * AFilename);
  *
  * \param AFilename - configuration filename
  *
- * \returns
+ * \returns TRUE if succesful, FALSE if failed.
  **/
 DLLAMA_API bool Dllama_LoadConfig(const char * AFilename);
 
