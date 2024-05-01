@@ -95,7 +95,8 @@ procedure Dllama_AddMessage(const ARole, AContent: string);
 function  Dllama_GetLastUserMessage(): string;
 
 // Inference
-function  Dllama_Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=TEMPREATURE_BALANCED; const ASeed: UInt32=MaxInt): Boolean;
+function  Dllama_Inference(const AModelName: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=TEMPREATURE_BALANCED; const ASeed: UInt32=MaxInt): Boolean;
+function  Dllama_GetInferenceResponse(): string;
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);
 function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: string; const AUseGPU: Boolean; const AMaxTokens: UInt32; const ACancelInferenceKey: Byte; const AQuestion: string): string;
 
@@ -243,12 +244,14 @@ begin
 end;
 
 // Inference
-function  Dllama_Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
-var
-  LResponse: PAnsiChar;
+function  Dllama_Inference(const AModelName: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
 begin
-  Result := Dllama.Dllama_Inference(PUTF8Char(UTF8Encode(AModelName)), @LResponse, AMaxTokens, ATemperature, ASeed);
-  AResponse := UTF8ToString(LResponse);
+  Result := Dllama.Dllama_Inference(PUTF8Char(UTF8Encode(AModelName)), AMaxTokens, ATemperature, ASeed);
+end;
+
+function  Dllama_GetInferenceResponse(): string;
+begin
+  Result := UTF8ToString(Dllama.Dllama_GetInferenceResponse());
 end;
 
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, TokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);

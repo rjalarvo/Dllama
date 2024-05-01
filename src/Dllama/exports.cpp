@@ -73,8 +73,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 
-#define DLLAMA_API extern "C" __declspec(dllexport)
-
 
 // Info
 DLLAMA_API void Dllama_GetVersionInfo(System::PPAnsiChar AName, System::PPAnsiChar ACodeName, System::PPAnsiChar AMajorVersion, System::PPAnsiChar AMinorVersion, System::PPAnsiChar APatchVersion, System::PPAnsiChar AVersion, System::PPAnsiChar AProject)
@@ -221,9 +219,14 @@ DLLAMA_API void Dllama_SetInferenceDoneCallback(const void * ASender, const Dlla
 	Dllama::Export::Dllama_SetInferenceDoneCallback(ASender, AHandler);
 }
 
-DLLAMA_API bool Dllama_Inference(const char * AModelName, System::PPAnsiChar AResponse, const System::UInt32 AMaxTokens, const float ATemperature, const System::UInt32 ASeed)
+DLLAMA_API bool Dllama_Inference(const char * AModelName, const System::UInt32 AMaxTokens, const float ATemperature, const System::UInt32 ASeed)
 {
-	return Dllama::Export::Dllama_Inference(AModelName, AResponse, AMaxTokens, ATemperature, ASeed);
+	return Dllama::Export::Dllama_Inference(AModelName, AMaxTokens, ATemperature, ASeed);
+}
+
+DLLAMA_API char* Dllama_GetInferenceResponse()
+{
+    return Dllama::Export::Dllama_GetInferenceResponse();
 }
 
 DLLAMA_API char * Dllama_Simple_Inference(const char * AModelPath, const char * AModelsDb, const char * AModelName, const bool AUseGPU, const System::UInt32 AMaxTokens, const System::Byte ACancelInferenceKey, const char * AQuestion)
@@ -300,6 +303,21 @@ DLLAMA_API bool  Dllama_TokenResponse_Finalize()
     return Dllama::Export::Dllama_TokenResponse_Finalize();
 }
 
+// UTF8
+DLLAMA_API char* Dllama_UTF8Encode(const char * AText)
+{
+    return Dllama::Export::Dllama_UTF8Encode(AText);
+}
+
+DLLAMA_API char* Dllama_UTF8Decode(const char * AText)
+{
+    return Dllama::Export::Dllama_UTF8Decode(AText);
+}
+
+DLLAMA_API void Dllama_FreeStr(const char * AText)
+{
+    Dllama::Export::Dllama_FreeStr(AText);
+}
 
 
 

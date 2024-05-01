@@ -85,3 +85,41 @@ bin/Dllama.pdb
 src/Dllama/Win64x
 src/Dllama/Dllama.@@@
 bin/view.txt
+
+
+# Ignore everything in the llama directory
+/src/Dllama/llama/*
+
+# Re-include the llama directory itself
+!src/Dllama/llama/
+
+# Re-include specific files
+!src/Dllama/llama/ggml-alloc.c
+!src/Dllama/llama/ggml-alloc.h
+!src/Dllama/llama/ggml-backend-impl.h
+!src/Dllama/llama/ggml-backend.c
+!src/Dllama/llama/ggml-backend.h
+!src/Dllama/llama/ggml-common.h
+!src/Dllama/llama/ggml-impl.h
+!src/Dllama/llama/ggml-quants.c
+!src/Dllama/llama/ggml-quants.h
+!src/Dllama/llama/ggml-vulkan-shaders.hpp
+!src/Dllama/llama/ggml-vulkan.cpp
+!src/Dllama/llama/ggml-vulkan.h
+!src/Dllama/llama/ggml.c
+!src/Dllama/llama/ggml.h
+!src/Dllama/llama/llama.cpp
+!src/Dllama/llama/llama.h
+!src/Dllama/llama/sgemm.h
+!src/Dllama/llama/unicode-data.cpp
+!src/Dllama/llama/unicode-data.h
+!src/Dllama/llama/unicode.cpp
+!src/Dllama/llama/unicode.h
+
+
+src/Dllama/llama/build.zig
+bin/test.zip
+bin/Dllama.zip
+src/Dllama/llama/build.zig
+src/Dllama/utf8.cpp
+src/Dllama/utf8.h

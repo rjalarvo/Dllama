@@ -3,7 +3,7 @@
         {
             "Filename": "Phi-3-mini-4k-instruct-q4.gguf",
             "Name": "phi3:4B:Q4",
-            "MaxContext": 4096,
+            "MaxContext": 4000,
             "ChatMessageTemplate": "<|%s|>\\n %s<|end|>\\n",
             "AChatMessageTemplateEnd": "<|assistant|>\\n",
             "StopSequences": [
@@ -17,8 +17,8 @@
         {
             "Filename": "Meta-Llama-3-8B-Instruct-Q6_K.gguf",
             "Name": "llama3:8B:Q6",
-            "MaxContext": 8192,
-            "ChatMessageTemplate": "<|start_header_id|>%s<|end_header_id|>\\n %s<|eot_id|>",
+            "MaxContext": 8000,
+            "ChatMessageTemplate": "<|begin_of_text|><|start_header_id|>%s<|end_header_id|>\\n %s<|eot_id|>",
             "AChatMessageTemplateEnd": "<|start_header_id|>assistant<|end_header_id|>",
             "StopSequences": [
                 "<|eot_id|>",

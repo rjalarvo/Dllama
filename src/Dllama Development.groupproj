@@ -12,6 +12,12 @@
         <Projects Include="..\examples\testbed\Testbed.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="..\..\..\..\Tests\test03\test03.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\..\..\Tests\test03\test_test03.dproj">
+            <Dependencies>..\..\..\..\Tests\test03\test03.dproj</Dependencies>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -47,14 +53,32 @@
     <Target Name="Testbed:Make">
         <MSBuild Projects="..\examples\testbed\Testbed.dproj" Targets="Make"/>
     </Target>
+    <Target Name="test03">
+        <MSBuild Projects="..\..\..\..\Tests\test03\test03.dproj"/>
+    </Target>
+    <Target Name="test03:Clean">
+        <MSBuild Projects="..\..\..\..\Tests\test03\test03.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="test03:Make">
+        <MSBuild Projects="..\..\..\..\Tests\test03\test03.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="test_test03" DependsOnTargets="test03">
+        <MSBuild Projects="..\..\..\..\Tests\test03\test_test03.dproj"/>
+    </Target>
+    <Target Name="test_test03:Clean" DependsOnTargets="test03:Clean">
+        <MSBuild Projects="..\..\..\..\Tests\test03\test_test03.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="test_test03:Make" DependsOnTargets="test03:Make">
+        <MSBuild Projects="..\..\..\..\Tests\test03\test_test03.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Dllama;Validate;Testbed"/>
+        <CallTarget Targets="Dllama;Validate;Testbed;test03;test_test03"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Dllama:Clean;Validate:Clean;Testbed:Clean"/>
+        <CallTarget Targets="Dllama:Clean;Validate:Clean;Testbed:Clean;test03:Clean;test_test03:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Dllama:Make;Validate:Make;Testbed:Make"/>
+        <CallTarget Targets="Dllama:Make;Validate:Make;Testbed:Make;test03:Make;test_test03:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

@@ -67,4 +67,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef exportsH
 #define exportsH
 //---------------------------------------------------------------------------
+
+#define DLLAMA_API extern "C" __declspec(dllexport)
+
 #endif

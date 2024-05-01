@@ -153,6 +153,7 @@ type
     FLoadModelCallback: TCallback<LoadModelCallback>;
     FInferenceCallback: TCallback<InferenceCallback>;
     FInferenceDoneCallback: TCallback<InferenceDoneCallback>;
+    FInferenceResponse: UTF8String;
   public
     // init
     constructor Create(); override;
@@ -195,7 +196,8 @@ type
     procedure SetInferenceCallback(const ASender: Pointer; const AHandler: TDllama.InferenceCallback);
     function  GetInferenceDoneCallback(): TDllama.InferenceDoneCallback;
     procedure SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback);
-    function  Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=0.5; const ASeed: UInt32=MaxInt): Boolean;
+    function  Inference(const AModelName: string; const AMaxTokens: UInt32=1024; const ATemperature: Single=0.5; const ASeed: UInt32=MaxInt): Boolean;
+    function  GetInferenceResponse(): UTF8String;
     procedure GetInferenceUsage(var AUsage: TDllama.Usage);
     function  IsInferenceActive(): Boolean;
 
@@ -533,13 +535,11 @@ begin
   Result := False;
 
   LFilename := TPath.ChangeExtension(AFilename, 'json');
-  (*
   if not TFile.Exists(LFilename) then
   begin
     SetError('[TDllama.LoadModelDb] Filename was not found: "%s"', [LFilename]);
     Exit;
   end;
-  *)
 
   LJson := TJsonObject.Parse(TFile.ReadAllText(LFilename, TEncoding.UTF8));
   try
@@ -835,7 +835,7 @@ begin
 end;
 
 
-function  TDllama.Inference(const AModelName: string; var AResponse: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
+function  TDllama.Inference(const AModelName: string; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
 var
   LAddBos: Boolean;
   LTokens: array of llama_token;
@@ -875,7 +875,7 @@ var
 
 begin
   Result := False;
-  AResponse := '';
+  FInferenceResponse := '';
 
   if IsInferenceActive() then Exit;
 
@@ -1023,7 +1023,7 @@ begin
           begin
             if not IsPartEndsWith(LBuffer, FLoadedModel.StopSequences) then
               begin
-                AResponse := AResponse + LToken;
+                FInferenceResponse := FInferenceResponse + UTF8String(LToken);
                 OnInference(LToken);
               end
             else
@@ -1067,6 +1067,11 @@ begin
     FInferenceActive := False;
     OnInferenceDone();
   end;
+end;
+
+function  TDllama.GetInferenceResponse(): UTF8String;
+begin
+  Result := FInferenceResponse;
 end;
 
 procedure TDllama.GetInferenceUsage(var AUsage: TDllama.Usage);

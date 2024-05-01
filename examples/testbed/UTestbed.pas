@@ -130,19 +130,57 @@ end;
 
 procedure AddModels();
 begin
-  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K.gguf', 'llama3:8B:Q6', 1024*8, '<|start_header_id|>%s<|end_header_id|>\n %s<|eot_id|>', '<|start_header_id|>assistant<|end_header_id|>', ['<|eot_id|>', '<|start_header_id|>', '<|end_header_id|>', 'assistant']);
-  Dllama_AddModel('Phi-3-mini-4k-instruct-q4.gguf', 'phi3:4B:Q4', 1024*4, '<|%s|>\n %s<|end|>\n', '<|assistant|>\n', ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']);
+  Dllama_AddModel(
+    // model filename
+    'Meta-Llama-3-8B-Instruct-Q6_K.gguf',
+
+    // model reference name
+    'llama3:8B:Q6',
+
+    // model max context size
+    1000*8, {8K}
+
+    // model prompt format
+    '<|begin_of_text|><|start_header_id|>%s<|end_header_id|>\n %s<|eot_id|>',
+
+    // model prompt format ending
+    '<|start_header_id|>assistant<|end_header_id|>',
+
+    // model stop sequences
+    ['<|eot_id|>', '<|start_header_id|>', '<|end_header_id|>', 'assistant']
+  );
+
+  Dllama_AddModel(
+    // model filename
+    'Phi-3-mini-4k-instruct-q4.gguf',
+
+    // model reference name
+    'phi3:4B:Q4',
+
+    // model max context size
+    1000*4, {4K}
+
+    // model prompt format
+    '<|%s|>\n %s<|end|>\n',
+
+    // model prompt format ending
+    '<|assistant|>\n',
+
+    // model stop sequences
+    ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']
+    );
+
   Dllama_SaveModelDb('models.json');
 end;
 
 procedure Test01();
 var
-  LResponse: string;
   LTokenInputSpeed: Single;
   LTokenOutputSpeed: Single;
   LInputTokens: Integer;
   LOutputTokens: Integer;
   LTotalTokens: Integer;
+
 begin
   // init config
   Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
@@ -161,15 +199,18 @@ begin
   //Dllama_AddMessage(ROLE_USER, 'Who are you?');
   //Dllama_AddMessage(ROLE_USER, 'What is KNO3?');
   //Dllama_AddMessage(ROLE_USER, 'Who is Bill Gates?');
-  Dllama_AddMessage(ROLE_USER, 'Почему трава зеленая?'); //Why grass is green?
+  //Dllama_AddMessage(ROLE_USER, 'Почему трава зеленая?'); //Why grass is green?
   //Dllama_AddMessage(ROLE_USER, 'Почему небо синее?');    //Why the sky is blue?
   //Dllama_AddMessage(ROLE_USER, 'Почему снег холодный?'); //Why snow is cold?
+  Dllama_AddMessage(ROLE_USER, 'what is the capital of all United States state?');
+
 
   // display user prompt
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('phi3:4B:Q4', LResponse) then
+  if Dllama_Inference('phi3:4B:Q4') then
+  //if Dllama_Inference('llama3:8B:Q6', LResponse) then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -188,7 +229,6 @@ end;
 
 procedure Test02();
 var
-  LResponse: string;
   LTokenInputSpeed: Single;
   LTokenOutputSpeed: Single;
   LInputTokens: Integer;
@@ -215,7 +255,7 @@ begin
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('phi3:4B:Q4', LResponse) then
+  if Dllama_Inference('phi3:4B:Q4') then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -234,7 +274,6 @@ end;
 
 procedure Test03();
 var
-  LResponse: string;
   LTokenInputSpeed: Single;
   LTokenOutputSpeed: Single;
   LInputTokens: Integer;
@@ -261,7 +300,7 @@ begin
   Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
 
   // do inference
-  if Dllama_Inference('llama3:8B:Q6', LResponse) then
+  if Dllama_Inference('llama3:8B:Q6') then
     begin
       // display usage
       Dllama_Console_PrintLn(CRLF, [], WHITE);
@@ -290,6 +329,59 @@ begin
   Dllama_Console_PrintLn(LResponse, [], WHITE);
 end;
 
+procedure Test05();
+var
+  LTokenInputSpeed: Single;
+  LTokenOutputSpeed: Single;
+  LInputTokens: Integer;
+  LOutputTokens: Integer;
+  LTotalTokens: Integer;
+  LResponse: string;
+
+begin
+  // init config
+  Dllama_InitConfig(CModelPath, -1, False, VK_ESCAPE);
+
+  // add models
+  AddModels();
+
+  // init callbacks
+  Dllama_SetInferenceCallback(nil, InferenceCallback);
+  Dllama_SetInferenceDoneCallback(nil, InferenceDoneCallback);
+  Dllama_SetLoadModelProgressCallback(nil, LoadModelProgressCallback);
+  Dllama_SetLoadModelCallback(nil, LoadModelCallback);
+
+  // add messages
+  Dllama_AddMessage(ROLE_SYSTEM, 'You are Dllama, a helpful AI assistant, created in 2024 by tinyBigGAMES LLC.');
+  Dllama_AddMessage(ROLE_USER, 'Who are you?');
+
+  // display user prompt
+  Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
+
+  // do inference
+  if Dllama_Inference('phi3:4B:Q4') then
+  //if Dllama_Inference('llama3:8B:Q6', LResponse) then
+    begin
+      // display usage
+      Dllama_Console_PrintLn(CRLF, [], WHITE);
+      Dllama_GetInferenceUsage(@LTokenInputSpeed, @LTokenOutputSpeed, @LInputTokens, @LOutputTokens, @LTotalTokens);
+      Dllama_Console_PrintLn('Tokens :: Input: %d, Output: %d, Total: %d, Speed: %3.1f t/s', [LInputTokens, LOutputTokens, LTotalTokens, LTokenOutputSpeed], BRIGHTYELLOW);
+
+      LResponse := Dllama_GetInferenceResponse();
+
+      Dllama_Console_PrintLn(CRLF+'Here is the inference response:', [], WHITE);
+      Dllama_Console_PrintLn(LResponse, [], WHITE);
+    end
+  else
+    begin
+      // display errors
+      Dllama_Console_PrintLn('Error: %s', [Dllama_GetError()], RED);
+    end;
+
+  // unload model
+  Dllama_UnloadModel();
+end;
+
 procedure RunTests();
 var
   LProject: string;
@@ -298,10 +390,11 @@ begin
   Dllama_Console_PrintLn(LProject, [], CYAN);
   Dllama_Console_PrintLn('', [], WHITE);
 
-  Test01();
+  //Test01();
   //Test02();
   //Test03();
   //Test04();
+  Test05();
 
   Dllama_Console_Pause();
 end;

@@ -80,63 +80,69 @@ uses
 // Init
 function  Dllama_Init(): Boolean; cdecl;
 procedure Dllama_Quit(); cdecl;
-procedure Dllama_GetVersionInfo(AName, ACodeName, AMajorVersion, AMinorVersion, APatchVersion, AVersion, AProject: PPAnsiChar); cdecl; {exports Dllama_GetVersionInfo;}
+procedure Dllama_GetVersionInfo(AName, ACodeName, AMajorVersion, AMinorVersion, APatchVersion, AVersion, AProject: PPAnsiChar); cdecl;
 
 // Config
-procedure Dllama_InitConfig(const AModelPath: PAnsiChar; const ANumGPULayers: Integer; const ADisplayInfo: Boolean; const ACancelInferenceKey: Byte); cdecl; {exports Dllama_InitConfig;}
-procedure Dllama_GetConfig(AModelPath: PPAnsiChar; ANumGPULayers: PInteger; ADisplayInfo: PBoolean; ACancelInferenceKey: PByte); cdecl; {exports Dllama_GetConfig;}
-function  Dllama_SaveConfig(const AFilename: PAnsiChar): Boolean; cdecl; {exports Dllama_SaveConfig;}
-function  Dllama_LoadConfig(const AFilename: PAnsiChar): Boolean; cdecl; {exports Dllama_LoadConfig;}
+procedure Dllama_InitConfig(const AModelPath: PAnsiChar; const ANumGPULayers: Integer; const ADisplayInfo: Boolean; const ACancelInferenceKey: Byte); cdecl;
+procedure Dllama_GetConfig(AModelPath: PPAnsiChar; ANumGPULayers: PInteger; ADisplayInfo: PBoolean; ACancelInferenceKey: PByte); cdecl;
+function  Dllama_SaveConfig(const AFilename: PAnsiChar): Boolean; cdecl;
+function  Dllama_LoadConfig(const AFilename: PAnsiChar): Boolean; cdecl;
 
 // Error
-function  Dllama_GetError(): PAnsiChar; cdecl; {exports Dllama_GetError;}
-procedure Dllama_SetError(const AText: PAnsiChar); cdecl; {exports Dllama_SetError;}
-procedure Dllama_ClearError(); cdecl; {exports Dllama_ClearError;}
+function  Dllama_GetError(): PAnsiChar; cdecl;
+procedure Dllama_SetError(const AText: PAnsiChar); cdecl;
+procedure Dllama_ClearError(); cdecl;
 
 // Model
-function  Dllama_GetLoadModelProgressCallback(): TDllama.LoadModelProgressCallback; cdecl; {exports Dllama_GetLoadModelProgressCallback;}
-procedure Dllama_SetLoadModelProgressCallback(const ASender: Pointer; const AHandler: TDllama.LoadModelProgressCallback); cdecl; {exports Dllama_SetLoadModelProgressCallback;}
-function  Dllama_GetLoadModelCallback(): TDllama.LoadModelCallback; cdecl; {exports Dllama_GetLoadModelCallback;}
-procedure Dllama_SetLoadModelCallback(const ASender: Pointer; const AHandler: TDllama.LoadModelCallback); cdecl; {exports Dllama_SetLoadModelCallback;}
-function  Dllama_AddModel(const AFilename, AName: PAnsiChar; const AMaxContext: UInt64; const AChatMessageTemplate, AChatMessageTemplateEnd: PAnsiChar; const AStopSequences: PPAnsiChar; const AStopSequencesCount: Cardinal): Boolean; cdecl; {exports Dllama_AddModel;}
-procedure Dllama_ClearModels(); cdecl; {exports Dllama_ClearModels;}
-function  Dllama_GetModelCount(): Cardinal; cdecl; {exports Dllama_GetModelCount;}
-function  Dllama_SaveModelDb(const AFilename: PAnsiChar): Boolean; cdecl; {exports Dllama_SaveModelDb;}
-function  Dllama_LoadModelDb(const AFilename: PAnsiChar): Boolean; cdecl; {exports Dllama_LoadModelDb;}
-function  Dllama_LoadModel(const AName: PAnsiChar): Boolean; cdecl; {exports Dllama_LoadModel;}
-function  Dllama_IsModelLoaded(): Boolean; cdecl; {exports Dllama_IsModelLoaded;}
-procedure Dllama_UnloadModel(); cdecl; {exports Dllama_UnloadModel;}
+function  Dllama_GetLoadModelProgressCallback(): TDllama.LoadModelProgressCallback; cdecl;
+procedure Dllama_SetLoadModelProgressCallback(const ASender: Pointer; const AHandler: TDllama.LoadModelProgressCallback); cdecl;
+function  Dllama_GetLoadModelCallback(): TDllama.LoadModelCallback; cdecl;
+procedure Dllama_SetLoadModelCallback(const ASender: Pointer; const AHandler: TDllama.LoadModelCallback); cdecl;
+function  Dllama_AddModel(const AFilename, AName: PAnsiChar; const AMaxContext: UInt64; const AChatMessageTemplate, AChatMessageTemplateEnd: PAnsiChar; const AStopSequences: PPAnsiChar; const AStopSequencesCount: Cardinal): Boolean; cdecl;
+procedure Dllama_ClearModels(); cdecl;
+function  Dllama_GetModelCount(): Cardinal; cdecl;
+function  Dllama_SaveModelDb(const AFilename: PAnsiChar): Boolean; cdecl;
+function  Dllama_LoadModelDb(const AFilename: PAnsiChar): Boolean; cdecl;
+function  Dllama_LoadModel(const AName: PAnsiChar): Boolean; cdecl;
+function  Dllama_IsModelLoaded(): Boolean; cdecl;
+procedure Dllama_UnloadModel(); cdecl;
 
 // Messages
-procedure Dllama_ClearMessages(); cdecl; {exports Dllama_ClearMessages;}
-procedure Dllama_AddMessage(const ARole, AContent: PAnsiChar); cdecl; {exports Dllama_AddMessage;}
-function  Dllama_GetLastUserMessage(): PAnsiChar; cdecl; {exports Dllama_GetLastUserMessage;}
+procedure Dllama_ClearMessages(); cdecl;
+procedure Dllama_AddMessage(const ARole, AContent: PAnsiChar); cdecl;
+function  Dllama_GetLastUserMessage(): PAnsiChar; cdecl;
 
 // Inference
-function  Dllama_GetInferenceCallback(): TDllama.InferenceCallback; cdecl; {exports Dllama_GetInferenceCallback;}
-procedure Dllama_SetInferenceCallback(const ASender: Pointer; const AHandler: TDllama.InferenceCallback); cdecl; {exports Dllama_SetInferenceCallback;}
+function  Dllama_GetInferenceCallback(): TDllama.InferenceCallback; cdecl;
+procedure Dllama_SetInferenceCallback(const ASender: Pointer; const AHandler: TDllama.InferenceCallback); cdecl;
 function  Dllama_GetInferenceDoneCallback(): TDllama.InferenceDoneCallback; cdecl; exports Dllama_GetInferenceDoneCallback;
-procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback); cdecl; {exports Dllama_SetInferenceDoneCallback;}
-function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean; cdecl; {exports Dllama_Inference;}
-procedure Dllama_GetInferenceUsage(ATokenInputSpeed, ATokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl; {exports Dllama_GetInferenceUsage;}
+procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer; const AHandler: TDllama.InferenceDoneCallback); cdecl;
+function  Dllama_Inference(const AModelName: PAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean; cdecl;
+function  Dllama_GetInferenceResponse(): PAnsiChar; cdecl;
+procedure Dllama_GetInferenceUsage(ATokenInputSpeed, ATokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger); cdecl;
 function  Dllama_IsInferenceActive(): Boolean; cdecl; exports Dllama_IsInferenceActive;
-function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: PAnsiChar; const AUseGPU: Boolean; const AMaxTokens: UInt32; const ACancelInferenceKey: Byte; const AQuestion: PAnsiChar): PAnsiChar; cdecl; {exports Dllama_Simple_Inference;}
+function  Dllama_Simple_Inference(const AModelPath, AModelsDb, AModelName: PAnsiChar; const AUseGPU: Boolean; const AMaxTokens: UInt32; const ACancelInferenceKey: Byte; const AQuestion: PAnsiChar): PAnsiChar; cdecl;
+
 
 // Console
-procedure Dllama_Console_GetSize(AWidth: PInteger; AHeight: PInteger); cdecl; {exports Dllama_Console_GetSize;}
-procedure Dllama_Console_Clear(); cdecl; {exports Dllama_Console_Clear;}
-procedure Dllama_Console_ClearLine(AColor: Word); cdecl; {exports Dllama_Console_ClearLine;}
-procedure Dllama_Console_SetTitle(const ATitle: PAnsiChar); cdecl; {exports Dllama_Console_SetTitle;}
-procedure Dllama_Console_Pause(const AForcePause: Boolean; AColor: Word; const aMsg: PAnsiChar); cdecl; {exports Dllama_Console_Pause;}
-procedure Dllama_Console_Print(const AText: PAnsiChar; const AColor: Word); cdecl; {exports Dllama_Console_Print;}
-procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word); cdecl; {exports Dllama_Console_PrintLn;}
+procedure Dllama_Console_GetSize(AWidth: PInteger; AHeight: PInteger); cdecl;
+procedure Dllama_Console_Clear(); cdecl;
+procedure Dllama_Console_ClearLine(AColor: Word); cdecl;
+procedure Dllama_Console_SetTitle(const ATitle: PAnsiChar); cdecl;
+procedure Dllama_Console_Pause(const AForcePause: Boolean; AColor: Word; const aMsg: PAnsiChar); cdecl;
+procedure Dllama_Console_Print(const AText: PAnsiChar; const AColor: Word); cdecl;
+procedure Dllama_Console_PrintLn(const AText: PAnsiChar; const AColor: Word); cdecl;
 
 // TokenResponse
-procedure Dllama_TokenResponse_SetRightMargin(const AMargin: Integer); cdecl; {exports Dllama_TokenResponse_SetRightMargin;}
-function  Dllama_TokenResponse_AddToken(const aToken: PAnsiChar): Integer; cdecl; {exports Dllama_TokenResponse_AddToken;}
-function  Dllama_TokenResponse_LastWord(): PAnsiChar; cdecl; {exports Dllama_TokenResponse_LastWord;}
-function  Dllama_TokenResponse_Finalize(): Boolean; cdecl; {exports Dllama_TokenResponse_Finalize;}
+procedure Dllama_TokenResponse_SetRightMargin(const AMargin: Integer); cdecl;
+function  Dllama_TokenResponse_AddToken(const aToken: PAnsiChar): Integer; cdecl;
+function  Dllama_TokenResponse_LastWord(): PAnsiChar; cdecl;
+function  Dllama_TokenResponse_Finalize(): Boolean; cdecl;
 
+// UTF8
+function  Dllama_UTF8Encode(const AText: PAnsiChar): PAnsiChar; cdecl;
+function  Dllama_UTF8Decode(const AText: PAnsiChar): PAnsiChar; cdecl;
+procedure Dllama_FreeStr(const AText: PAnsiChar); cdecl;
 
 
 implementation
@@ -412,20 +418,17 @@ begin
   LDllama.SetInferenceDoneCallback(ASender, AHandler);
 end;
 
-function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
-var
-  LResponse: string;
+function  Dllama_Inference(const AModelName: PAnsiChar; const AMaxTokens: UInt32; const ATemperature: Single; const ASeed: UInt32): Boolean;
 begin
   Result := False;
   if not Assigned(LDllama) then Exit;
 
-  if Assigned(AResponse) then
-    LResponse := UTF8ToString(AResponse^);
+  Result := LDllama.Inference(UTF8ToString(AModelName), AMaxTokens, ATemperature, ASeed);
+end;
 
-  Result := LDllama.Inference(UTF8ToString(AModelName), LResponse, AMaxTokens, ATemperature, ASeed);
-
-  if Assigned(AResponse) then
-    AResponse^ := Utils.AsUTF8(LResponse);
+function  Dllama_GetInferenceResponse(): PAnsiChar;
+begin
+  Result := PUTF8Char(LDllama.GetInferenceResponse());
 end;
 
 procedure Dllama_GetInferenceUsage(ATokenInputSpeed, ATokenOutputSpeed: PSingle; AInputTokens, AOutputTokens, ATotalTokens: PInteger);
@@ -475,13 +478,22 @@ var
   LModelsDb: string;
   LQuestion: string;
   LModelName: string;
-  LResponse: string;
   LNumGPULayers: Integer;
+
+  function ConvertToUTF8(const Input: PAnsiChar; CodePage: Word): RawByteString;
+  var
+    S: string;
+  begin
+    S := TEncoding.GetEncoding(CodePage).GetString(BytesOf(Input));
+    Result := RawByteString(TEncoding.UTF8.GetBytes(S));
+  end;
+
 begin
   Result := nil;
   if LDllama.IsInferenceActive() then Exit;
 
   LQuestion := UTF8ToString(AQuestion);
+  //LQuestion := UTF8ToString(ConvertToUTF8(AQuestion, 1251));
   if LQuestion.IsEmpty then
   begin
     Result := 'Question can not be blank.';
@@ -528,9 +540,9 @@ begin
 
   LDllama.AddMessage('user', LQuestion);
 
-  if LDllama.Inference(LModelName, LResponse) then
+  if LDllama.Inference(LModelName, AMaxTokens, 1, 1024) then
     begin
-      Result := Utils.AsUTF8(LResponse);
+      Result := Dllama_GetInferenceResponse();
     end
   else
     begin
@@ -601,7 +613,35 @@ begin
   Result := LTokenResponse.Finalize();
 end;
 
+// UTF8
+function Dllama_UTF8Encode(const AText: PAnsiChar): PAnsiChar;
+var
+  LText: UTF8String;
+begin
+  LText := AText;
+  GetMem(Result, Length(LText) + 1);
+  Move(LText[1], Result^, Length(LText));
+  Result[Length(LText)] := #0;
+end;
 
+function Dllama_UTF8Decode(const AText: PAnsiChar): PAnsiChar;
+var
+  LText: UTF8String;
+  LResult: AnsiString;
+begin
+  LText := AText;
+  LResult := AnsiString(LText);
+
+  GetMem(Result, Length(LResult) + 1);
+  Move(LResult[1], Result^, Length(LResult));
+  Result[Length(LResult)] := #0;
+end;
+
+procedure Dllama_FreeStr(const AText: PAnsiChar);
+begin
+  if AText <> nil then
+    FreeMem(AText);
+end;
 
 initialization
 begin

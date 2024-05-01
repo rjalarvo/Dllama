@@ -65,14 +65,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef DLLAMA_H
 #define DLLAMA_H
 
+// check for supported platform
 #ifndef _WIN64
 #error "Unsupported platform"
 #endif
 
+// link in Dllama.lib
+#pragma comment(lib,"Dllama.lib")
+
+// includes
 #include <stdbool.h>
 #include <stdint.h>
-
-#define DLLAMA_API extern "C" __declspec(dllimport)
+#include <wchar.h>
 
 // Dllama DLL
 #define DLLAMA_DLL "Dllama.dll"
@@ -111,6 +115,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TOKENRESPONSE_WAIT    0
 #define TOKENRESPONSE_APPEND  1
 #define TOKENRESPONSE_NEWLINE 2
+
+#define DLLAMA_API __declspec(dllimport)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Callbacks
 typedef bool (*LoadModelProgressCallback)(const void * ASender,
@@ -359,7 +369,6 @@ DLLAMA_API void Dllama_SetInferenceDoneCallback(const void * ASender,
  * Run inference on currenly loaded LLM.
  *
  * \param AModelName   - model reference name
- * \param AResponse    - pointer to a string to hold response
  * \param AMaxTokens   - max token to allow
  * \param ATemperature - control reponse (0-1, 0 = precise, 0.5 = balanced,
  *                       1 = creative)
@@ -368,8 +377,16 @@ DLLAMA_API void Dllama_SetInferenceDoneCallback(const void * ASender,
  *
  * \returns TRUE on success, FALSE on failure.
  **/
-DLLAMA_API bool Dllama_Inference(const char * AModelName, char** AResponse,
+DLLAMA_API bool Dllama_Inference(const char * AModelName,
   const uint32_t AMaxTokens, const float ATemperature, const uint32_t ASeed);
+
+/**
+ * Get response of last inference on currenly loaded LLM.
+ *
+ * \returns UTF8 encoded string.
+ **/
+DLLAMA_API char* Dllama_GetInferenceResponse();
+
 
 /**
  * Get usage about last LLM inference.
@@ -491,5 +508,15 @@ DLLAMA_API char* Dllama_TokenResponse_LastWord();
  * \returns TRUE if there is more text to display, FALSE if not.
  **/
 DLLAMA_API bool  Dllama_TokenResponse_Finalize();
+
+// UTF8
+DLLAMA_API char* Dllama_UTF8Encode(const char * AText);
+DLLAMA_API char* Dllama_UTF8Decode(const char * AText);
+DLLAMA_API void Dllama_FreeStr(const char * AText);
+
+
+#ifdef __cplusplus
+}
+#endif //__cplusplus
 
 #endif //DLLAMA_H

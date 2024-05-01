@@ -383,9 +383,16 @@ procedure Dllama_SetInferenceDoneCallback(const ASender: Pointer;
  *
  * \returns TRUE on success, FALSE on failure.
  **)
-function  Dllama_Inference(const AModelName: PAnsiChar; AResponse: PPAnsiChar;
+function  Dllama_Inference(const AModelName: PAnsiChar;
   const AMaxTokens: UInt32; const ATemperature: Single;
   const ASeed: UInt32): Boolean; cdecl; external DLLAMA_DLL;
+
+(**
+ * Get response of last inference on currenly loaded LLM.
+ *
+ * \returns UTF8 encoded string.
+ **)
+function  Dllama_GetInferenceResponse(): PAnsiChar; cdecl; external DLLAMA_DLL;
 
 (**
  * Get usage about last LLM inference.
@@ -514,7 +521,6 @@ function  Dllama_TokenResponse_LastWord(): PAnsiChar; cdecl;
  * \returns TRUE if there is more text to display, FALSE if not.
  **)
 function  Dllama_TokenResponse_Finalize(): Boolean; cdecl; external DLLAMA_DLL;
-
 
 implementation
 
