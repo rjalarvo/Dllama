@@ -42,7 +42,8 @@ begin
   Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
 
   // add model
-  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8, '<|start_header_id|>%s %s<|end_header_id|>',
+  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8,
+    '<|start_header_id|>%s %s<|end_header_id|>',
     '\n assistant:\n', ['<|eot_id|>', 'assistant']);
 
   // add messages
