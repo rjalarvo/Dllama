@@ -425,11 +425,13 @@ begin
   Result := False;
 
   LFilename := TPath.ChangeExtension(TPath.Combine(FConfig.ModelPath, AFilename), 'gguf');
+  (*
   if not TFile.Exists(LFilename) then
   begin
     SetError('[TDllama.AddModel] Model filename was not found: "%s"', [LFilename]);
     Exit;
   end;
+  *)
 
   if AName.IsEmpty then
   begin
@@ -911,6 +913,7 @@ begin
     end;
 
     LNBatch := llama_n_batch(FContext);
+    //LNBatch := 512;
     LBatch := llama_batch_init(LNBatch, 0, 1);
     try
       for I := 0 to LTokenCount-1 do

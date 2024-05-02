@@ -158,7 +158,7 @@ begin
     'phi3:4B:Q4',
 
     // model max context size
-    1000*4, {4K}
+    1000*8, {8K}
 
     // model prompt format
     '<|%s|>\n %s<|end|>\n',
@@ -197,12 +197,13 @@ begin
   // add messages
   Dllama_AddMessage(ROLE_SYSTEM, 'You are Dllama, a helpful AI assistant, created in 2024 by tinyBigGAMES LLC.');
   //Dllama_AddMessage(ROLE_USER, 'Who are you?');
-  //Dllama_AddMessage(ROLE_USER, 'What is KNO3?');
+  Dllama_AddMessage(ROLE_USER, 'What is KNO3?');
   //Dllama_AddMessage(ROLE_USER, 'Who is Bill Gates?');
   //Dllama_AddMessage(ROLE_USER, 'Почему трава зеленая?'); //Why grass is green?
   //Dllama_AddMessage(ROLE_USER, 'Почему небо синее?');    //Why the sky is blue?
   //Dllama_AddMessage(ROLE_USER, 'Почему снег холодный?'); //Why snow is cold?
-  Dllama_AddMessage(ROLE_USER, 'what is the capital of all United States state?');
+  //Dllama_AddMessage(ROLE_USER, 'list the capital of each state in the U.S.');
+  //Dllama_AddMessage(ROLE_USER, 'Почему в пустыне нет воды?'); //
 
 
   // display user prompt
@@ -390,11 +391,11 @@ begin
   Dllama_Console_PrintLn(LProject, [], CYAN);
   Dllama_Console_PrintLn('', [], WHITE);
 
-  //Test01();
+  Test01();
   //Test02();
   //Test03();
   //Test04();
-  Test05();
+  //Test05();
 
   Dllama_Console_Pause();
 end;

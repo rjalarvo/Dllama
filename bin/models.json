@@ -3,7 +3,7 @@
         {
             "Filename": "Phi-3-mini-4k-instruct-q4.gguf",
             "Name": "phi3:4B:Q4",
-            "MaxContext": 4000,
+            "MaxContext": 8000,
             "ChatMessageTemplate": "<|%s|>\\n %s<|end|>\\n",
             "AChatMessageTemplateEnd": "<|assistant|>\\n",
             "StopSequences": [
