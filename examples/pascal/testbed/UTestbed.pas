@@ -146,8 +146,9 @@ const
   //CPrompt = 'Why is the sky blue?';
   //CPrompt = 'A story about an AI coming to life.';
   //CPrompt = 'What is AI?';
-  CPrompt = 'Почему снег холодный?'; //Why snow is cold?
+  //CPrompt = 'Почему снег холодный?'; //Why snow is cold?
   //CPrompt = 'Translate to Japanies, Spaish and Italian: Hello, how are you?';
+  CPrompt = 'List countries with provinces';
 
 var
   LCallbacks: TDllama_Callbacks;

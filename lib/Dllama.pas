@@ -195,10 +195,24 @@ procedure Dllama_Print(const AText: PAnsiChar;
 
 implementation
 
+{$IFNDEF FPC}
+{$IF CompilerVersion < 36.0} // Delphi 12 corresponds to version 36.0
+uses
+  System.Math;
+{$IFEND}
+{$ENDIF}
+
 initialization
-  {$IFNDEF FPC}
+
+{$IFNDEF FPC}
   ReportMemoryLeaksOnShutdown := True;
-  {$ENDIF}
+
+  {$IF CompilerVersion < 36.0} // Delphi 12 corresponds to version 36.0
+  // disable floating point exceptions
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
+  {$IFEND}
+
+{$ENDIF}
 
 finalization
 
