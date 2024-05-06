@@ -82,10 +82,7 @@ int main()
 ```
 ### Media
 
-
-https://github.com/tinyBigGAMES/Dllama/assets/69952438/9f1fc3be-01cb-45e3-8b57-25416d7e0b8d
-
-
+https://github.com/tinyBigGAMES/Dllama/assets/69952438/9eaefbb3-4522-4c56-a04f-d6902d7ef122
 
 ### Support
 Our development motto: 
