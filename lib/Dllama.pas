@@ -64,6 +64,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 unit Dllama;
 
+{$IFDEF FPC}
+{$MODE DELPHIUNICODE}
+{$ENDIF}
+
 {$IFNDEF WIN64}
   {$MESSAGE Error 'Unsupported platform'}
 {$ENDIF}
@@ -176,6 +180,12 @@ function  Dllama_Inference(const AModelName: PAnsiChar;
   const AUsage: PDllama_Usage=nil;
   const AError: PPAnsiChar=nil): Boolean; cdecl; external DLLAMA_DLL;
 
+// Do inference on model with a single call. It will return a response
+// to your question or an error if failed.
+function  Dllama_Simple_Inference(const AConfigFilename, AModelName,
+  AQuestion: PAnsiChar; const AMaxTokens: UInt32): PAnsiChar;
+  cdecl; external DLLAMA_DLL;
+
 // Clear the current console line
 procedure Dllama_ClearLine(AColor: WORD); cdecl; external DLLAMA_DLL;
 
@@ -186,13 +196,10 @@ procedure Dllama_Print(const AText: PAnsiChar;
 implementation
 
 initialization
-begin
+  {$IFNDEF FPC}
   ReportMemoryLeaksOnShutdown := True;
-end;
+  {$ENDIF}
 
 finalization
-begin
-
-end;
 
 end.

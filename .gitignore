@@ -122,3 +122,4 @@ src/Dllama/utf8.h
 
 bin/test05.pdb
 *.zig
+bin/Testbed.zip

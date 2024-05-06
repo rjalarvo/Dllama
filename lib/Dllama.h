@@ -168,8 +168,14 @@ DLLAMA_API const char* Dllama_GetLastUserMessage();
 
 // Do inference on model, up to AMaxTokens, get response, usage and error
 DLLAMA_API bool Dllama_Inference(const char* AModelName,
-  unsigned int AMaxTokens, char** AResponse,
+  const unsigned int AMaxTokens, char** AResponse,
   const TDllama_Usage* AUsage, char** AError);
+  
+// Do inference on model with a single call. It will return a response
+// to your question or an error if failed.
+DLLAMA_API char * Dllama_Simple_Inference(const char * AConfigFilename,
+  const char * AModelName, const char * AQuestion,
+  const unsigned int AMaxTokens);
   
 // Clear the current console line  
 DLLAMA_API void Dllama_ClearLine(unsigned short AColor);

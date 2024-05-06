@@ -273,6 +273,7 @@ procedure Dllama_ClearMessages(); cdecl;
 procedure Dllama_AddMessage(const ARole, AContent: PAnsiChar); cdecl;
 function  Dllama_GetLastUserMessage(): PAnsiChar; cdecl;
 function  Dllama_Inference(const AModelName: PAnsiChar; const AMaxTokens: UInt32; AResponse: PPAnsiChar=nil; const AUsage: TDllama.PUsage=nil; const AError: PPAnsiChar=nil): Boolean; cdecl;
+function  Dllama_Simple_Inference(const AConfigFilename, AModelName, AQuestion: PAnsiChar; const AMaxTokens: UInt32): PAnsiChar; cdecl;
 procedure Dllama_ClearLine(AColor: WORD); cdecl;
 procedure Dllama_Print(const AText: PAnsiChar; const AColor: WORD=TDllama.WHITE); cdecl;
 
@@ -1429,6 +1430,69 @@ end;
 function  Dllama_Inference(const AModelName: PAnsiChar; const AMaxTokens: UInt32; AResponse: PPAnsiChar=nil; const AUsage: TDllama.PUsage=nil; const AError: PPAnsiChar=nil): Boolean;
 begin
   Result := LDllama.Inference(UTF8ToString(AModelName), AMaxTokens, AResponse, AUsage, AError);
+end;
+
+{ Dllama_Simple_Inference }
+procedure Dllama_Simple_Inference_OnInferenceToken(const ASender: Pointer; const AToken: PAnsiChar); cdecl;
+begin
+end;
+
+procedure Dllama_Simple_Inference_OnInfo(const ASender: Pointer; const ALevel: Integer; const AText: PAnsiChar); cdecl;
+begin
+end;
+
+function Dllama_Simple_Inference_OnLoadModelProgress(const ASender: Pointer; const AModelName: PAnsiChar; const AProgress: Single): Boolean; cdecl;
+begin
+  Result := True;
+end;
+
+procedure Dllama_Simple_Inference_OnLoadModel(const ASender: Pointer; const ASuccess: Boolean); cdecl;
+begin
+end;
+
+function  Dllama_Simple_Inference(const AConfigFilename, AModelName, AQuestion: PAnsiChar; const AMaxTokens: UInt32): PAnsiChar;
+var
+  LCallbacks: TDllama.Callbacks;
+begin
+  Result := nil;
+
+  if AConfigFilename = '' then
+  begin
+    Result := 'AConfigFilename can not be blank.';
+    Exit;
+  end;
+
+  if AQuestion = '' then
+  begin
+    Result := 'AQuestion can not be blank.';
+    Exit;
+  end;
+
+  LCallbacks := Default(TDllama.Callbacks);
+  LCallbacks.InferenceTokenCallback := Dllama_Simple_Inference_OnInferenceToken;
+  LCallbacks.InfoCallback := Dllama_Simple_Inference_OnInfo;
+  LCallbacks.LoadModelProgressCallback := Dllama_Simple_Inference_OnLoadModelProgress;
+  LCallbacks.LoadModelCallback := Dllama_Simple_Inference_OnLoadModel;
+
+  if not Dllama_Init(AConfigFilename, @LCallbacks) then
+  begin
+    Result := PUTF8Char(LDllama.FError);
+    Exit;
+  end;
+  try
+    Dllama_AddMessage(TDllama.ROLE_USER, AQuestion);
+
+    if Dllama_Inference(AModelName, AMaxTokens, nil, nil, nil) then
+    begin
+      Result := PUTF8Char(LDllama.FInferenceResponse);
+    end
+  else
+    begin
+      Result := PUTF8Char(LDllama.FError);
+    end;
+  finally
+    Dllama_Quit();
+  end;
 end;
 
 procedure Dllama_ClearLine(AColor: WORD);

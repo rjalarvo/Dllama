@@ -111,6 +111,11 @@ DLLAMA_API bool __cdecl Dllama_Inference(const char * AModelName, const System::
 	return Dllama::Core::Dllama_Inference(AModelName, AMaxTokens, AResponse, AUsage, AError);
 }
 
+DLLAMA_API char * __cdecl Dllama_Simple_Inference(const char * AConfigFilename, const char * AModelName, const char * AQuestion, const System::UInt32 AMaxTokens)
+{
+    return Dllama::Core::Dllama_Simple_Inference(AConfigFilename, AModelName, AQuestion, AMaxTokens);
+}
+
 DLLAMA_API void __cdecl Dllama_ClearLine(System::Word AColor)
 {
     Dllama::Core::Dllama_ClearLine(AColor);
