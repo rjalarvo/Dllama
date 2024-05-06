@@ -95,6 +95,7 @@ const
   GGUF_MAGIC = 'GGUF';
   GGUF_VERSION = 3;
   GGUF_DEFAULT_ALIGNMENT = 32;
+  GGML_KQ_MASK_PAD = 32;
   GGML_N_TASKS_MAX = -1;
   LLAMA_DEFAULT_SEED = $FFFFFFFF;
   LLAMA_MAX_RNG_STATE = (64*1024);
@@ -102,7 +103,7 @@ const
   LLAMA_FILE_MAGIC_GGSN = $6767736e;
   LLAMA_FILE_MAGIC_GGSQ = $67677371;
   LLAMA_SESSION_MAGIC = LLAMA_FILE_MAGIC_GGSN;
-  LLAMA_SESSION_VERSION = 5;
+  LLAMA_SESSION_VERSION = 6;
   LLAMA_STATE_SEQ_MAGIC = LLAMA_FILE_MAGIC_GGSQ;
   LLAMA_STATE_SEQ_VERSION = 1;
 
@@ -259,26 +260,27 @@ const
   GGML_OP_ARGSORT = 54;
   GGML_OP_LEAKY_RELU = 55;
   GGML_OP_FLASH_ATTN = 56;
-  GGML_OP_FLASH_FF = 57;
-  GGML_OP_FLASH_ATTN_BACK = 58;
-  GGML_OP_SSM_CONV = 59;
-  GGML_OP_SSM_SCAN = 60;
-  GGML_OP_WIN_PART = 61;
-  GGML_OP_WIN_UNPART = 62;
-  GGML_OP_GET_REL_POS = 63;
-  GGML_OP_ADD_REL_POS = 64;
-  GGML_OP_UNARY = 65;
-  GGML_OP_MAP_UNARY = 66;
-  GGML_OP_MAP_BINARY = 67;
-  GGML_OP_MAP_CUSTOM1_F32 = 68;
-  GGML_OP_MAP_CUSTOM2_F32 = 69;
-  GGML_OP_MAP_CUSTOM3_F32 = 70;
-  GGML_OP_MAP_CUSTOM1 = 71;
-  GGML_OP_MAP_CUSTOM2 = 72;
-  GGML_OP_MAP_CUSTOM3 = 73;
-  GGML_OP_CROSS_ENTROPY_LOSS = 74;
-  GGML_OP_CROSS_ENTROPY_LOSS_BACK = 75;
-  GGML_OP_COUNT = 76;
+  GGML_OP_FLASH_ATTN_EXT = 57;
+  GGML_OP_FLASH_FF = 58;
+  GGML_OP_FLASH_ATTN_BACK = 59;
+  GGML_OP_SSM_CONV = 60;
+  GGML_OP_SSM_SCAN = 61;
+  GGML_OP_WIN_PART = 62;
+  GGML_OP_WIN_UNPART = 63;
+  GGML_OP_GET_REL_POS = 64;
+  GGML_OP_ADD_REL_POS = 65;
+  GGML_OP_UNARY = 66;
+  GGML_OP_MAP_UNARY = 67;
+  GGML_OP_MAP_BINARY = 68;
+  GGML_OP_MAP_CUSTOM1_F32 = 69;
+  GGML_OP_MAP_CUSTOM2_F32 = 70;
+  GGML_OP_MAP_CUSTOM3_F32 = 71;
+  GGML_OP_MAP_CUSTOM1 = 72;
+  GGML_OP_MAP_CUSTOM2 = 73;
+  GGML_OP_MAP_CUSTOM3 = 74;
+  GGML_OP_CROSS_ENTROPY_LOSS = 75;
+  GGML_OP_CROSS_ENTROPY_LOSS_BACK = 76;
+  GGML_OP_COUNT = 77;
 
 type
   ggml_unary_op = Integer;
@@ -460,6 +462,8 @@ const
   LLAMA_VOCAB_PRE_TYPE_MPT = 5;
   LLAMA_VOCAB_PRE_TYPE_STARCODER = 6;
   LLAMA_VOCAB_PRE_TYPE_GPT2 = 7;
+  LLAMA_VOCAB_PRE_TYPE_REFACT = 8;
+  LLAMA_VOCAB_PRE_TYPE_COMMAND_R = 9;
 
 type
   llama_rope_type = Integer;
@@ -902,7 +906,7 @@ type
     sorted: Boolean;
   end;
 
-  llama_progress_callback = function(progress: Single; ctx: Pointer): Boolean; cdecl;
+  llama_progress_callback = function(progress: Single; user_data: Pointer): Boolean; cdecl;
 
   llama_batch = record
     n_tokens: Int32;
@@ -971,6 +975,7 @@ type
     logits_all: Boolean;
     embeddings: Boolean;
     offload_kqv: Boolean;
+    flash_attn: Boolean;
     abort_callback: ggml_abort_callback;
     abort_callback_data: Pointer;
   end;
@@ -1679,6 +1684,12 @@ function ggml_top_k(ctx: Pggml_context; a: Pggml_tensor; k: Integer): Pggml_tens
 
 function ggml_flash_attn(ctx: Pggml_context; q: Pggml_tensor; k: Pggml_tensor; v: Pggml_tensor; masked: Boolean): Pggml_tensor; cdecl;
   external DLLAMA_DLL name _PU + 'ggml_flash_attn';
+
+function ggml_flash_attn_ext(ctx: Pggml_context; q: Pggml_tensor; k: Pggml_tensor; v: Pggml_tensor; mask: Pggml_tensor; scale: Single): Pggml_tensor; cdecl;
+  external DLLAMA_DLL name _PU + 'ggml_flash_attn_ext';
+
+procedure ggml_flash_attn_ext_set_prec(a: Pggml_tensor; prec: ggml_prec); cdecl;
+  external DLLAMA_DLL name _PU + 'ggml_flash_attn_ext_set_prec';
 
 function ggml_flash_attn_back(ctx: Pggml_context; q: Pggml_tensor; k: Pggml_tensor; v: Pggml_tensor; d: Pggml_tensor; masked: Boolean): Pggml_tensor; cdecl;
   external DLLAMA_DLL name _PU + 'ggml_flash_attn_back';

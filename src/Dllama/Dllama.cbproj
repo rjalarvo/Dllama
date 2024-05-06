@@ -1,10 +1,10 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{A645DA1B-8826-49F6-9615-D38C1042A6E2}</ProjectGuid>
+        <ProjectGuid>{9E1A207C-EE7E-4120-B5BA-9D84D51A3F22}</ProjectGuid>
         <ProjectVersion>20.1</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Distro</Config>
         <Platform Condition="'$(Platform)'==''">Win64x</Platform>
         <ProjectName Condition="'$(ProjectName)'==''">Dllama</ProjectName>
         <TargetedPlatforms>1048576</TargetedPlatforms>
@@ -64,15 +64,13 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Distro' or '$(Cfg_4)'!=''">
         <Cfg_4>true</Cfg_4>
-        <CfgParent>Cfg_2</CfgParent>
-        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win64x' and '$(Cfg_4)'=='true') or '$(Cfg_4_Win64x)'!=''">
         <Cfg_4_Win64x>true</Cfg_4_Win64x>
         <CfgParent>Cfg_4</CfgParent>
         <Cfg_4>true</Cfg_4>
-        <Cfg_2>true</Cfg_2>
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
@@ -116,18 +114,20 @@
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=tinyBigGAMES™ LLC;FileDescription=Dllama™ - Local LLM Inference Library;FileVersion=1.0.0.0;InternalName=Dllama™ - Local LLM Inference Library;LegalCopyright=Copyright © 2024-present tinyBigGAMES™ LLC;LegalTrademarks=All Rights Reserved.;OriginalFilename=Dllama.dll;ProgramID=com.tinybiggames.dllama;ProductName=Dllama™ - Local LLM Inference Library;ProductVersion=1.0.0.0;Comments=https://dllama.dev</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=tinyBigGAMES™ LLC;FileDescription=Dllama™ - Local LLM Inference Library;FileVersion=0.1.0.0;InternalName=Dllama™ - Local LLM Inference Library;LegalCopyright=Copyright © 2024-present tinyBigGAMES™ LLC;LegalTrademarks=All Rights Reserved.;OriginalFilename=Dllama.dll;ProgramID=com.tinybiggames.dllama;ProductName=Dllama™ - Local LLM Inference Library;ProductVersion=1.0.0.0;Comments=https://dllama.dev</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <FinalOutputDir>..\..\bin</FinalOutputDir>
+        <VerInfo_MajorVer>0</VerInfo_MajorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
+        <VerInfo_DLL>true</VerInfo_DLL>
         <Manifest_File>(None)</Manifest_File>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <Defines>WIN32;GGML_SCHED_MAX_COPIES=4;GGML_USE_VULKAN;_CRT_SECURE_NO_WARNINGS;_XOPEN_SOURCE=600;DLLAMA;$(Defines)</Defines>
-        <IncludePath>.\vulkan\include;$(IncludePath)</IncludePath>
-        <VerInfo_DLL>true</VerInfo_DLL>
-        <DCC_UnitSearchPath>.\dllama;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <FinalOutputDir>..\..\bin</FinalOutputDir>
+        <BPILibOutputDir>..\..\lib</BPILibOutputDir>
         <ILINK_GCSections>true</ILINK_GCSections>
-        <PostBuildEvent><![CDATA[copy /V /Y "..\..\bin\Dllama.lib" "..\..\lib\Dllama.lib"
-$(PostBuildEvent)]]></PostBuildEvent>
+        <Defines>WIN32;GGML_SCHED_MAX_COPIES=4;GGML_USE_VULKAN;_CRT_SECURE_NO_WARNINGS;_XOPEN_SOURCE=600;$(Defines)</Defines>
+        <IncludePath>C:\Dev\Delphi\Projects\Dllama\repo\main\src\Dllama\vulkan\include;$(IncludePath)</IncludePath>
+        <ILINK_AdditionalOptions>exports.def -out-implib &quot;..\..\lib\Dllama.lib&quot;</ILINK_AdditionalOptions>
+        <DCC_UnitSearchPath>.\dllama;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
@@ -159,7 +159,9 @@ $(PostBuildEvent)]]></PostBuildEvent>
     <PropertyGroup Condition="'$(Cfg_1_Win64x)'!=''">
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_MajorVer>0</VerInfo_MajorVer>
         <LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_DLL>true</VerInfo_DLL>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -171,17 +173,24 @@ $(PostBuildEvent)]]></PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64x)'!=''">
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_MajorVer>0</VerInfo_MajorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_DLL>true</VerInfo_DLL>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <ILINK_AdditionalOptions>exports.def --gc-sections --strip-all  -out-implib &quot;..\..\lib\Dllama.lib&quot;</ILINK_AdditionalOptions>
         <LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
-        <ILINK_AdditionalOptions>--gc-sections --strip-all</ILINK_AdditionalOptions>
-        <PostBuildEvent><![CDATA[compress-dllama.cmd
-$(PostBuildEvent)]]></PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_4_Win64x)'!=''">
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_MajorVer>0</VerInfo_MajorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_DLL>true</VerInfo_DLL>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <ILINK_AdditionalOptions>exports.def --gc-sections --strip-all -out-implib &quot;..\..\lib\Dllama.lib&quot;</ILINK_AdditionalOptions>
+        <LinkPackageStatics>rtl.lib;vcl.lib</LinkPackageStatics>
+        <PostBuildEvent><![CDATA[dllama-compress.cmd
+$(PostBuildEvent)]]></PostBuildEvent>
+        <Defines>NDEBUG;$(Defines)</Defines>
     </PropertyGroup>
     <ItemGroup>
         <PCHCompile Include="DllamaPCH1.h">
@@ -189,74 +198,59 @@ $(PostBuildEvent)]]></PostBuildEvent>
             <PCH>true</PCH>
         </PCHCompile>
         <DelphiCompile Include="dllama\Dllama.Core.pas">
-            <VirtualFolder>{179D0F88-F270-4E09-8A10-E1A6DE732321}</VirtualFolder>
+            <VirtualFolder>{4A3F10B1-A1E5-4D03-AE99-0E854C0D1509}</VirtualFolder>
             <BuildOrder>12</BuildOrder>
         </DelphiCompile>
-        <None Include="dllama\Dllama.Defines.inc">
-            <VirtualFolder>{179D0F88-F270-4E09-8A10-E1A6DE732321}</VirtualFolder>
-        </None>
-        <DelphiCompile Include="dllama\Dllama.Deps.Ext.pas">
-            <VirtualFolder>{179D0F88-F270-4E09-8A10-E1A6DE732321}</VirtualFolder>
-            <BuildOrder>14</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="dllama\Dllama.Deps.pas">
-            <VirtualFolder>{179D0F88-F270-4E09-8A10-E1A6DE732321}</VirtualFolder>
-            <BuildOrder>15</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="dllama\Dllama.Export.pas">
-            <VirtualFolder>{179D0F88-F270-4E09-8A10-E1A6DE732321}</VirtualFolder>
-            <BuildOrder>16</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="dllama\Dllama.Utils.pas">
-            <VirtualFolder>{179D0F88-F270-4E09-8A10-E1A6DE732321}</VirtualFolder>
-            <BuildOrder>17</BuildOrder>
+            <VirtualFolder>{4A3F10B1-A1E5-4D03-AE99-0E854C0D1509}</VirtualFolder>
+            <BuildOrder>13</BuildOrder>
         </DelphiCompile>
         <CppCompile Include="exports.cpp">
             <DependentOn>exports.h</DependentOn>
-            <BuildOrder>18</BuildOrder>
+            <BuildOrder>14</BuildOrder>
         </CppCompile>
         <CppCompile Include="llama\ggml-alloc.c">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>4</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="llama\ggml-backend.c">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>5</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="llama\ggml-quants.c">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>6</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="llama\ggml-vulkan.cpp">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>7</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="llama\ggml.c">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
             <BuildOrder>3</BuildOrder>
         </CppCompile>
+        <CppCompile Include="llama\ggml-backend.c">
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>4</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="llama\ggml-quants.c">
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>5</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="llama\ggml-vulkan.cpp">
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>6</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="llama\ggml.c">
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
         <CppCompile Include="llama\llama.cpp">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>8</BuildOrder>
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>7</BuildOrder>
         </CppCompile>
         <CppCompile Include="llama\unicode-data.cpp">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>10</BuildOrder>
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>9</BuildOrder>
         </CppCompile>
         <CppCompile Include="llama\unicode.cpp">
-            <VirtualFolder>{142A06AA-0D56-4150-930D-2BC043B67608}</VirtualFolder>
-            <BuildOrder>9</BuildOrder>
+            <VirtualFolder>{AF791679-5446-478C-948F-E929B28B3B62}</VirtualFolder>
+            <BuildOrder>8</BuildOrder>
         </CppCompile>
         <CppCompile Include="main.cpp">
             <BuildOrder>1</BuildOrder>
         </CppCompile>
         <CppCompile Include="misc\cerr_redirector.cpp">
-            <VirtualFolder>{E27B8DB6-8523-46A7-88E6-24B5F49C59CD}</VirtualFolder>
-            <BuildOrder>11</BuildOrder>
+            <VirtualFolder>{6E970746-F9AF-4B2C-89C2-CE470EC9C15A}</VirtualFolder>
+            <BuildOrder>10</BuildOrder>
         </CppCompile>
         <LibFiles Include="vulkan\lib\vulkan-1.lib" Condition="'$(Platform)'=='Win64x' Or '$(Platform)'=='Win32'">
-            <VirtualFolder>{1A9BEBA1-CB9B-44A4-BA65-86D5EBA537D4}</VirtualFolder>
-            <BuildOrder>2</BuildOrder>
+            <VirtualFolder>{EB68E795-153A-4B21-8C5B-AB4AE4930826}</VirtualFolder>
+            <BuildOrder>11</BuildOrder>
             <IgnorePath>true</IgnorePath>
         </LibFiles>
         <BuildConfiguration Include="Base">
@@ -272,7 +266,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         </BuildConfiguration>
         <BuildConfiguration Include="Distro">
             <Key>Cfg_4</Key>
-            <CfgParent>Cfg_2</CfgParent>
+            <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>
     <ProjectExtensions>
@@ -293,10 +287,12 @@ $(PostBuildEvent)]]></PostBuildEvent>
                     <Excluded_Packages Name="$(BDSBIN)\bcbofficexp290.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
                 </Excluded_Packages>
                 <VFOLDERS>
-                    <VFOLDER ID="{179D0F88-F270-4E09-8A10-E1A6DE732321}" name="dllama"/>
-                    <VFOLDER ID="{1A9BEBA1-CB9B-44A4-BA65-86D5EBA537D4}" name="libs"/>
-                    <VFOLDER ID="{142A06AA-0D56-4150-930D-2BC043B67608}" name="llama"/>
-                    <VFOLDER ID="{E27B8DB6-8523-46A7-88E6-24B5F49C59CD}" name="misc"/>
+                    <VFOLDER ID="{F6C9046D-A453-416C-8A59-E6F3515C8E1B}" name="cpp">
+                        <VFOLDER ID="{EB68E795-153A-4B21-8C5B-AB4AE4930826}" name="libs"/>
+                        <VFOLDER ID="{AF791679-5446-478C-948F-E929B28B3B62}" name="llama"/>
+                        <VFOLDER ID="{6E970746-F9AF-4B2C-89C2-CE470EC9C15A}" name="misc"/>
+                    </VFOLDER>
+                    <VFOLDER ID="{4A3F10B1-A1E5-4D03-AE99-0E854C0D1509}" name="pas"/>
                 </VFOLDERS>
             </CPlusPlusBuilder.Personality>
             <Deployment Version="4">
@@ -1239,28 +1235,12 @@ $(PostBuildEvent)]]></PostBuildEvent>
     <Import Project="$(BDS)\Bin\CodeGear.Cpp.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')"/>
     <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
     <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
-    <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win64x'">
-        <PreBuildEvent/>
-        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
-        <PreLinkEvent/>
-        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy /V /Y &quot;..\..\bin\Dllama.lib&quot; &quot;..\..\lib\Dllama.lib&quot;</PostBuildEvent>
-        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win64x'">
-        <PreBuildEvent/>
-        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
-        <PreLinkEvent/>
-        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>compress-dllama.cmd&amp;&amp;copy /V /Y &quot;..\..\bin\Dllama.lib&quot; &quot;..\..\lib\Dllama.lib&quot;</PostBuildEvent>
-        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Distro' And '$(Platform)'=='Win64x'">
         <PreBuildEvent/>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>compress-dllama.cmd&amp;&amp;copy /V /Y &quot;..\..\bin\Dllama.lib&quot; &quot;..\..\lib\Dllama.lib&quot;</PostBuildEvent>
+        <PostBuildEvent>dllama-compress.cmd</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
 </Project>

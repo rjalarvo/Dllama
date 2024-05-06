@@ -6,7 +6,7 @@
 # Dllama
 
 ### Overview
-A simple and easy to use library for doing local LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a> (any language with bindings). It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses <a href="https://www.vulkan.org/" target="_blank">Vulkan</a> back end for acceleration. I'm getting ~25 tokens/sec on my INVIDA RTX 3060 using Vulkan.
+A simple and easy to use library for doing local LLM inference directly from <a href="https://www.embarcadero.com/products/delphi" target="_blank">Delphi</a> (any language with bindings). It can load <a href="https://huggingface.co/docs/hub/gguf" target="_blank">GGUF</a> formatted LLMs into CPU or GPU memory. Uses <a href="https://www.vulkan.org/" target="_blank">Vulkan</a> back end for acceleration.
 
 ### Installation
 - Download <a href="https://github.com/tinyBigGAMES/Dllama/archive/refs/heads/main.zip" target="_blank">Dllama</a> and extract to a desired location. 
@@ -26,85 +26,56 @@ Delphi example:
 ```Delphi  
 uses
   System.SysUtils,
-  Dllama,
-  Dllama.Ext;
-  
-var  
-  LResponse: string;
-  LTokenInputSpeed: Single;
-  LTokenOutputSpeed: Single;
-  LInputTokens: Integer;
-  LOutputTokens: Integer;
-  LTotalTokens: Integer;
+  Dllama;
 
 begin
-  // init config
-  Dllama_InitConfig('C:\LLM\gguf', -1, False, VK_ESCAPE);
-
-  // add model
-  Dllama_AddModel('Meta-Llama-3-8B-Instruct-Q6_K', 'llama3', 1024*8,
-    '<|start_header_id|>%s %s<|end_header_id|>',
-    '\n assistant:\n', ['<|eot_id|>', 'assistant']);
-
-  // add messages
-  Dllama_AddMessage(ROLE_SYSTEM, 'you are Dllama, a helpful AI assistant.');
-  Dllama_AddMessage(ROLE_USER, 'who are you?');
-
-  // display the user prompt
-  Dllama_Console_PrintLn(Dllama_GetLastUserMessage(), [], DARKGREEN);
-  
-  // do inference
-  if Dllama_Inference('llama3', LResponse) then
+  // init
+  if not Dllama_Init('config.json', nil) then
+    Exit;
+  try
+    // add message
+    Dllama_AddMessage(ROLE_SYSTEM, 'You are a helpful AI assistant');
+    Dllama_AddMessage(ROLE_USER, 'What is AI?');
+    
+    // do inference
+    if Dllama_Inference('phi3', 1024, nil, nil, nil) then
     begin
-      // display usage
-      Dllama_Console_PrintLn(CRLF, [], WHITE);
-      Dllama_GetInferenceUsage(@LTokenInputSpeed, @LTokenOutputSpeed, @LInputTokens, @LOutputTokens,
-        @LTotalTokens);
-      Dllama_Console_PrintLn('Tokens :: Input: %d, Output: %d, Total: %d, Speed: %3.1f t/s',
-        [LInputTokens, LOutputTokens, LTotalTokens, LTokenOutputSpeed], BRIGHTYELLOW);
+      // success
     end
   else
     begin
-      Dllama_Console_PrintLn('Error: %s', [Dllama_GetError()], RED);
+      // error
     end;
-  Dllama_UnloadModel();
+  finally
+    Dllama_Quit();
+  end;
 end.
 ```  
 CPP Example  
 ```CPP  
-#include <iostream>
 #include <Dllama.h>
 
 int main()
 {
     // init config
-    Dllama_InitConfig("C:\\LLM\\gguf", -1, true, 27);
+    Dllama_InitConfig("config.json", nil);
 
-    // load model database
-    if (!Dllama_LoadModelDb("models.json"))
-    {
-        // display error
-        std::cout << "Error: " << Dllama_GetError() << "\n";
-        return 1;
-    }
-    
     // add message
-    Dllama_AddMessage(ROLE_USER, "who is bill gates?");
-    
-    char** response = nullptr;
-    if (Dllama_Inference("phi3:4B:Q4", response, 1024, 0.5, 1111))
+    Dllama_AddMessage(ROLE_SYSTEM, "You are a helpful AI assistant");
+    Dllama_AddMessage(ROLE_USER, "What is AI?");
+
+    // do inference
+    if (Dllama_Inference("phi34", 1024, NULL, NILL, NULL)
     {
-        // success - do something with response
+        // success
     }
     else
     {
-        // display error
-        std::cout << "Error: " << Dllama_GetError() <<"\n";
+        // error
         return 1;
     };
     
-    // pause
-    Dllama_Console_Pause(true, WHITE, "");
+    Dllama_Quit();
 
     return 0;
 }

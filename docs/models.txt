@@ -4,8 +4,8 @@ These models have been tested and known to work in Dllama
 Name:          : Phi-3-Mini-4K-Instruct
 Download       : https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf?download=true
 Max Context    : 4k
-Template       : '<|%s|>\n %s<|end|>\n'
-Template End   : '<|assistant|>\n'
+Template       : '<|%s|>%s<|end|>'
+Template End   : '<|assistant|>'
 Stop Sequences : ['<|user|>', '<|assistant|>', '<|system|>', '<|end|>', '<|endoftext|>']
 More info      : https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
 
@@ -13,7 +13,7 @@ More info      : https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
 Name:          : Meta-Llama-3-8B-Instruct
 Download       : https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true
 Max Context    : 8k
-Template       : '<|begin_of_text|><|start_header_id|>%s<|end_header_id|>\\n %s<|eot_id|>'
+Template       : '<|begin_of_text|><|start_header_id|>%s<|end_header_id|>%s<|eot_id|>'
 Template End   : '<|start_header_id|>assistant<|end_header_id|>'
 Stop Sequences : ['<|eot_id|>', '<|start_header_id|>', '<|end_header_id|>', 'assistant']
 More info      : https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF

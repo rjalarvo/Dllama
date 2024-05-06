@@ -75,7 +75,6 @@ bin/Dllama.Deps.dll.txt
 bin/Dllama.dll.txt
 bin/dump.bat
 #bin/models.json
-bin/config.json
 !bin/Dllama.Deps.dll
 !bin/Dllama.dll
 bin/Dllama.lib
@@ -116,10 +115,10 @@ bin/view.txt
 !src/Dllama/llama/unicode.cpp
 !src/Dllama/llama/unicode.h
 
-
-src/Dllama/llama/build.zig
 bin/test.zip
 bin/Dllama.zip
-src/Dllama/llama/build.zig
 src/Dllama/utf8.cpp
 src/Dllama/utf8.h
+
+bin/test05.pdb
+*.zig

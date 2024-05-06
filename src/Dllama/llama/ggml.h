@@ -173,10 +173,6 @@
 //
 //
 
-#ifdef DLLAMA
-#define GGML_API __declspec(dllexport)
-#else
-
 #ifdef GGML_SHARED
 #    if defined(_WIN32) && !defined(__MINGW32__)
 #        ifdef GGML_BUILD
@@ -189,8 +185,6 @@
 #    endif
 #else
 #    define GGML_API
-#endif
-
 #endif
 
 #ifdef GGML_MULTIPLATFORM

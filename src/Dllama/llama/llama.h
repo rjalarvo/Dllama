@@ -1,4 +1,4 @@
-﻿#ifndef LLAMA_H
+#ifndef LLAMA_H
 #define LLAMA_H
 
 #include "ggml.h"
@@ -8,10 +8,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
-
-#ifdef DLLAMA
-#define LLAMA_API __declspec(dllexport)
-#else
 
 #ifdef LLAMA_SHARED
 #    if defined(_WIN32) && !defined(__MINGW32__)
@@ -25,8 +21,6 @@
 #    endif
 #else
 #    define LLAMA_API
-#endif
-
 #endif
 
 #ifdef __GNUC__
@@ -85,6 +79,8 @@ extern "C" {
         LLAMA_VOCAB_PRE_TYPE_MPT            = 5,
         LLAMA_VOCAB_PRE_TYPE_STARCODER      = 6,
         LLAMA_VOCAB_PRE_TYPE_GPT2           = 7,
+        LLAMA_VOCAB_PRE_TYPE_REFACT         = 8,
+        LLAMA_VOCAB_PRE_TYPE_COMMAND_R      = 9,
     };
 
     // note: these values should be synchronized with ggml_rope
@@ -177,7 +173,7 @@ extern "C" {
         bool sorted;
     } llama_token_data_array;
 
-    typedef bool (*llama_progress_callback)(float progress, void *ctx);
+    typedef bool (*llama_progress_callback)(float progress, void * user_data);
 
     // Input data for llama_decode
     // A llama_batch object can contain input about one or many sequences

@@ -10,4 +10,4 @@ foster trust by confirming that all executables have been scanned for
 potential security threats and are safe for use.
 =============================================================================
 
-Dllama.dll - https://www.virustotal.com/gui/file/d969e24b1f144937210ed648eeb467f19aea4d6c6af4b1b14b4247125ebdd386?nocache=1
+Dllama.dll - https://www.virustotal.com/gui/file/978a72ed5ef614f4c6bc0a0ff58cb6f2877815ae527f425cf2dd83781c1d6ef2?nocache=1
