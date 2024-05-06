@@ -84,6 +84,8 @@ int main()
 
 https://github.com/tinyBigGAMES/Dllama/assets/69952438/9eaefbb3-4522-4c56-a04f-d6902d7ef122
 
+https://github.com/tinyBigGAMES/Dllama/assets/69952438/3c48fcc9-e44f-45c2-bd1f-2a6115ffbcd7
+
 ### Support
 Our development motto: 
 - We will not release products that are buggy, incomplete, adding new features over not fixing underlying issues.
