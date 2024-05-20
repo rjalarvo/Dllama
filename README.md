@@ -10,7 +10,7 @@ A simple and easy to use library for doing local LLM inference directly from <a 
 
 ### Installation
 - Download <a href="https://github.com/tinyBigGAMES/Dllama/archive/refs/heads/main.zip" target="_blank">Dllama</a> and extract to a desired location. 
-- Download a GGUF model from Hugging Face (only the ones that are supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). See <a href="docs/MODELS.txt" target="_blank">MODELS.txt</a>.
+- Download a GGUF model from Hugging Face (only the ones that are supported by <a href="https://github.com/ggerganov/llama.cpp" target="_blank">llama.cpp</a>). See <a href="docs/models.txt" target="_blank">MODELS.txt</a>.
 - If you have a Vulkan supported GPU, it will be accelerated for faster inference, otherwise if will use the CPU. You will not be able to use a model larger than your available resources, so take note of the amount of memory that it requires. 
 - See the examples in `installdir\examples` folder on how to use **Dllama** in Delphi.
 - You **MUST** include `Dllama.dll` in your project distro.
